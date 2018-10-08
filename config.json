@@ -8,7 +8,7 @@
         "nsfw",
         "roles",
         "streams",
-        "voice"
+        "voice" 
     ],
     "default-module": "general",
 
@@ -75,6 +75,7 @@
                 "pending" : [],
                 "auto-role": [],
                 "whitelist": [],
+                "exclusivities": [],
                 "blacklist" : [],
                 "admin" : []
             },
@@ -113,7 +114,17 @@
                     "assets mass it",
                     "mother composer",
                     "learning",
-                    "Spectator"
+                    "Spectator",
+                    "Superman",
+                    "Batman",
+                    "Aquaman"
+                ],
+                "exclusivities": [
+                    [
+                        "Superman",
+                        "Batman",
+                        "Aquaman"
+                    ]
                 ],
                 "blacklist" : [],
                 "admin" : [
@@ -148,6 +159,7 @@
             "roles": {
                 "pending": [],
                 "whitelist": [],
+                "exclusivities": [],
                 "blacklist": [],
                 "admin" : []
             },
@@ -179,6 +191,7 @@
             "roles": {
                 "pending": [],
                 "whitelist": [],
+                "exclusivities": [],
                 "blacklist": [],
                 "admin" : []
             },
