@@ -74,8 +74,22 @@
             "roles": {
                 "pending" : [],
                 "auto-role": [],
-                "whitelist": [],
-                "exclusivities": [],
+                "whitelist": [
+                    "spheromancer",
+                    "triblader",
+                    "quadroguard",
+                    "pentafist",
+                    "hexacast"
+                ],
+                "exclusivities": [
+                    [
+                        "spheromancer",
+                        "triblader",
+                        "quadroguard",
+                        "pentafist",
+                        "hexacast"
+                    ]
+                ],
                 "blacklist" : [],
                 "admin" : []
             },
