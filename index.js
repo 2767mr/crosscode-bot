@@ -1,292 +1,391 @@
-const Discord = require("discord.js");
-const client = new Discord.Client();
-
-let {
-    readFileSync
-} = require('fs');
-let util = require('./discord-util.js');
+const discord = require('discord.js');
+const fs = require('fs');
 const fetch = require('node-fetch');
-if(!process.env.BOT_PREFIX) {
-  var env = readFileSync('.env', 'utf8').split("\n");
-  env.forEach(function(element) {
-      if(!element)
-          return;
-      var token = element.split("=");
-      process.env[token[0]] = token[1];
-  });
-}
 
-let prefix = process.env.BOT_PREFIX;
-let configuration = JSON.parse(readFileSync("./config.json"));
+const util = require('./discord-util.js');
 
-let servers = configuration["role-servers"];
-let manageServs;
-let cmdTypes = configuration.modules;
-let commands = {};
-let helpText = {};
-for (let type of cmdTypes) {
-    commands[type] = require(`./modules/${type}.js`)(client, util, configuration, console);
-    //TODO: Add help text for each function
-    helpText[type] = readFileSync(`./help/${type}.txt`).toString();
-}
-Array.prototype.random = Array.prototype.random || function() {
-    return this[parseInt(Math.random() * this.length)];
-}
+const client = new discord.Client();
 
-let activities = [];
-for(let act of configuration.activities)
-{
-    act.type = configuration["activity-types"].indexOf(act.type);
-    activities.push(act);
-}
+const SAFE_INTERVAL = 30 * 1000;// every 30 seconds it updates to be more precise
 
-util.setRateLimiterDefaultConfig(configuration["ratelimit-defaults"]);
+class Bot {
+    constructor() {
+        this._extendPrototypes();
 
-/*function newGame() {
-    var ran = activities.random();
-    client.user.setPresence({
-        game: ran
-    });
-};*/
+        this._loadEnv();
+        this._loadConfig();
 
-function EXIT_HANDLER() {
-    try {
-        if (client) client.destroy();
-        process.exit();
-    } catch(e) {}
-}
-
-process.on('exit', EXIT_HANDLER.bind(null));    // Normal exit
-process.on('SIGINT', EXIT_HANDLER.bind(null));  // Ctrl+C
-process.on('SIGUSR1', EXIT_HANDLER.bind(null, {exit:true})); // Common supervisor signals
-process.on('SIGUSR2', EXIT_HANDLER.bind(null, {exit:true}));
-process.on('uncaughtException', EXIT_HANDLER.bind(null, {exit:true})); // Exceptions
-
-function singularPluralMaker(time, baseTimeString) {
-    return baseTimeString + (time > 1? "s" : "");
-}
-function timeUnitStringNormalizer(time) {
-   if(time < 10) {
-	return "0" + time;
-   }
-   return "" + time;
-}
-function getCountDown() {
-  let releaseDate = new Date('Thu, 20 Sep 2018 20:00:00 GMT+02:00');
-  let currentDate = new Date();
-  let diffDays = Math.floor((releaseDate - currentDate)/ (1000 * 60**2 * 24));// below * 24 hours in a day
-  let diffHrs = Math.floor((releaseDate - currentDate)/ (1000      // ms in a second
-                                                       * 60     // second in a minute
-                                                       * 60)); // minutes in an hour
-  let diffMinutes = Math.floor(((releaseDate - currentDate)/(1000 * 60 * 60)%(diffHrs ? diffHrs : 1)) * 60);
-  let timeType = "";
-  let timeString = "";
-  let watchType = ["the calendar", "the clock", "the last hour"];
-  let watchTypeIndex = 0;
-
-  if(diffMinutes >= 1) {
-      timeType = singularPluralMaker(diffMinutes, "minute");
-      timeString = timeUnitStringNormalizer(diffMinutes) + " " + timeType;
-      watchTypeIndex = 2;
-   }
-   if(diffHrs >= 1) {
-      timeType = singularPluralMaker(diffHrs, "hour");
-      timeString = timeUnitStringNormalizer(diffHrs) + " " + timeType + " " + timeString;
-      watchTypeIndex = 1;
-   }
-   if(diffDays >= 1) {
-      timeType = singularPluralMaker(diffDays, "day");
-      timeString = timeUnitStringNormalizer(diffDays)  + " " + timeType + " " + timeString;
-      watchTypeIndex = 0;
-   }
-
-  let name = "";
-  let type = 3;
-   if(timeType) {
-        let watching = watchType[watchTypeIndex];
- 	name = `${watching} - ${timeString} left`;
-    } else {
-        type = 0;
-	name = "CrossCode v1";
-   }
-
-    return {type, name};
-}
-function onCountDown() {
-     client.user.setPresence({
-      game: getCountDown()
-     });
-}
-client.on('ready', () => {
-    manageServs = util.getAllServers(client, servers, console);
-    util.setupSelfRateLimiters(configuration["self-ratelimit"])
-    util.setupDMRatelimiter(configuration["ratelimit-defaults"]);
-    util.getAllEmotes(client);
-    console.log(`Logged in as ${client.user.tag}!`);
-    onCountDown();
-    util.setSafeInterval(onCountDown, 30 * 1000);// every 30 seconds it updates to be more precise
-});
-client.on('guildMemberAdd', function(newMember) {
-    for (let serv of manageServs)
-        if (newMember.guild.id === serv.id) {
-            if(serv.pending.length) {
-              //newMember.addRoles(serv.pending).catch(console.log);
-              //serv.chans.syslog.send(`Added ${serv.pending[0].name} role to ${newMember}`);
-            }
-            var newGreet = util.greetingsParse(newMember.guild, serv.greet);
-            serv.chans.greet && serv.chans.greet.send(`${newMember}, ${newGreet}`);
-            break;
-        }
-});
-client.on('guildMemberRemove', member => {
-    for (let serv of manageServs)
-        if (member.guild.id === serv.id) {
-            if(!serv.chans.editlog)
-                break;
-            try {
-              serv.chans.editlog.send(`Member left the server: ${member}`, util.createRichEmbed({
-                  fields:[{
-                      name:"Had roles",
-                      value: member.roles.array().join('\r\n')
-                  }]
-              })).catch(console.log);
-            }catch(e) {
-              console.log(e);
-            }
-
-            break;
-        }
-});
-client.on('messageUpdate', (oldMsg, newMsg) => {
-    var author = oldMsg.author;
-    if(author.bot || oldMsg.content == newMsg.content)
-        return;
-    for (let serv of manageServs)
-        if (oldMsg.guild.id === serv.id) {
-            if(!serv.chans.editlog)
-                break;
-
-            serv.chans.editlog.send(`Member updated message in ${oldMsg.channel}: ${author}`, util.createRichEmbed({
-                fields: [
-                    { name: "From", value: oldMsg.content },
-                    { name: "To", value: newMsg.content }
-                ]
-            })).catch(console.log);
-            break;
-        }
-});
-client.on('messageDelete', msg => {
-    var author = msg.author;
-    if(author.bot)
-        return;
-    for (let serv of manageServs)
-        if (msg.guild.id === serv.id) {
-            if(!serv.chans.editlog)
-                break;
-
-            serv.chans.editlog.send(`A message was deleted in ${msg.channel}: ${author}`, util.createRichEmbed({
-                fields: [
-                    { name: "Content", value: msg.content }
-                ]
-            })).catch(console.log);
-            break;
-        }
-});
-async function getDriveFileDirLink(url) {
-	var regexfileID = /\/d\/(.*?)\//;
-
-	var fileID = url.match(regexfileID)[1];
-	var response = await fetch(`https://drive.google.com/uc?id=${fileID}`)
-	return response.url
-}
-function getJPGUrl(msg) {
-  var regexfileURL = /(?:JPG\:\s?)(.*)/;
-  if(regexfileURL.test(msg)) {
-    return msg.match(regexfileURL)[1];
-  }
-  return "";
-}
-
-async function onMessage(msg) {
-    if (msg.content.toLowerCase().startsWith("?release")) {
-        util.consumeRateLimitToken(msg).then(() => {
-            msg.channel.send("Watching " + getCountDown().name);
-        });
-        return;
+        this._setExitHandler();
     }
 
-    if (msg.content.toLowerCase().startsWith("failed to load")) {
-        util.consumeRateLimitToken(msg).then(() => {
-            msg.channel.send("oof");
-        });
-        return;
-    }
-    // Get stream drawings links automatically
-	if(msg.channel.name === "media") {
-        var ccChan = util.discObjFind(msg.guild.channels, "^crosscode$");
-        if(ccChan) {
-            var url = getJPGUrl(msg.content);
-            if(!url)
-              return;
-            if(url.includes("dropbox")) {
-                // this will auto redirect to raw location
-                var res = await fetch(url);
-                ccChan.send(`<@!208763015657553921>! Add this url to stream drawings. ${res.url}`);
-            } else if(url.includes("drive.google.com")) {
-                var directLink = await getDriveFileDirLink(url);
-                ccChan.send(`<@!208763015657553921>! Add this url to stream drawings. ${directLink}`);
-            }
-        }
-
-        return;
+    start() {
+        this._registerHandlers();
+        
+        client.login(process.env.BOT_TOKEN);
     }
 
-    //Allow for new line parsing
-	var message = msg.content.replace(/<@!?(.*?)>/g,"") // Remove mentions
-	                                    .replace(/^\s+|\s+$/g, '')
-    let args = util.argParse(message);
-    let _prefix = args.shift();
-    if (!_prefix.startsWith(prefix))
-        return;
-
-    let invoc = _prefix;
-    let type = configuration["default-module"];
-    if (args[0] && args[0].startsWith("-")) {
-        type = args[0].substring(1)
-        if (!commands[type]) {
-            onError(msg);
-            return;
-        }
-        invoc += ` ${args[0]}`;
-        args.shift();
-    }
-
-    let command = args.shift();
-    if (command === "help") {
-        util.consumeRateLimitToken(msg).then(() => {
-            msg.author.send(util.formatHelpText(invoc, helpText[type]));
-            return;
-        });
-    }
-    let func = commands[type][command]
-    if (func) {
-        util.consumeRateLimitToken(msg).then(() => {
-            return new Promise((resolve, reject) => {
-                let result;
-                try {
-                    result = func(msg, args, command, console);
-                } catch (err) {
-                    reject(err);
+    _loadEnv() {
+        if(!process.env.BOT_PREFIX) {
+            const env = fs.readFileSync('.env', 'utf8').split('\n');
+            for (const element of env) {
+                if(!element) {
+                    return;
                 }
-                resolve(result);
-            });
-        }).then(function(res) {}, function(err) {
-            if (err && err != "banlist") {
+                const token = element.split('=');
+                process.env[token[0]] = token[1];
+            }
+        }
+    }
+
+    _loadConfig() {
+        this.prefix = process.env.BOT_PREFIX;
+        this.configuration = Object.freeze(JSON.parse(fs.readFileSync('./config.json')));
+        this.servers = this.configuration['role-servers'];
+
+        this._loadModules();
+        this._loadActivities();
+        
+        util.setRateLimiterDefaultConfig(this.configuration['ratelimit-defaults']);
+    }
+
+    _loadModules() {
+        const cmdTypes = this.configuration.modules;
+        const commands = {};
+        const helpText = {};
+
+        for (const type of cmdTypes) {
+            commands[type] = require(`./modules/${type}.js`)(client, util, this.configuration, console);
+            //TODO: Add help text for each function
+            helpText[type] = fs.readFileSync(`./help/${type}.txt`).toString();
+        }
+
+        this.commands = Object.freeze(commands);
+        this.helpText = Object.freeze(helpText);
+    }
+
+    _loadActivities() {
+        const activities = [];
+
+        for(const activity of this.configuration.activities)
+        {
+            activity.type = this.configuration['activity-types'].indexOf(activity.type);
+            activities.push(activity);
+        }
+
+        this.activities = Object.freeze(activities);
+    }
+
+    _setExitHandler() {
+        function EXIT_HANDLER() {
+            try {
+                if (client) client.destroy();
+                process.exit();
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        process.on('exit', EXIT_HANDLER.bind(null));    // Normal exit
+        process.on('SIGINT', EXIT_HANDLER.bind(null));  // Ctrl+C
+        process.on('SIGUSR1', EXIT_HANDLER.bind(null, {exit:true})); // Common supervisor signals
+        process.on('SIGUSR2', EXIT_HANDLER.bind(null, {exit:true}));
+        process.on('uncaughtException', EXIT_HANDLER.bind(null, {exit:true})); // Exceptions
+    }
+
+    _extendPrototypes() {
+        Array.prototype.random = Array.prototype.random || function() {
+            return this[parseInt(Math.random() * this.length)];
+        };
+    }
+    
+    _onCountDown() {
+        const ran = this.activities.random();
+        client.user.setPresence({
+            game: ran
+        });
+    }
+
+    _registerHandlers() {
+        client.on('ready', () => this._onReady());
+        client.on('guildMemberAdd', (member) => this._onGuildMemberAdd(member));
+        client.on('guildMemberRemove', (member) => this._onGuildMemberRemove(member));
+        client.on('messageUpdate', (oldMsg, newMsg) => this._onMessageUpdate(oldMsg, newMsg));
+        client.on('messageDelete', (msg) => this._onMessageDelete(msg));
+        client.on('message', (msg) => this._onMessage(msg));
+    }
+
+    _onReady() {
+        this.managedServers = util.getAllServers(client, this.servers, console);
+
+        util.setupSelfRateLimiters(this.configuration['self-ratelimit']);
+        util.setupDMRatelimiter(this.configuration['ratelimit-defaults']);
+        util.getAllEmotes(client);
+
+        console.log(`Logged in as ${client.user.tag}!`);
+
+        this._onCountDown();
+        util.setSafeInterval(() => this._onCountDown(), SAFE_INTERVAL);
+    }
+
+    /**
+     * 
+     * @param {discord.GuildMember} member 
+     */
+    _onGuildMemberAdd(member) {
+        for (const server of this.managedServers) {
+            if (member.guild.id === server.id) {
+                if (server.pending.length) {
+                    //newMember.addRoles(serv.pending).catch(console.log);
+                    //serv.chans.syslog.send(`Added ${serv.pending[0].name} role to ${newMember}`);
+                }
+                const newGreet = util.greetingsParse(member.guild, server.greet);
+                if (server.chans.greet) {
+                    server.chans.greet.send(`${member}, ${newGreet}`);
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param {discord.GuildMember} member 
+     */
+    _onGuildMemberRemove(member) {
+        for (const server of this.managedServers) {
+            if (member.guild.id === server.id) {
+                if(!server.chans.editlog)
+                    break;
+
+                server.chans.editlog.send(`Member left the server: ${member}`, 
+                    util.createRichEmbed({
+                        fields: [{
+                            name: 'Had roles',
+                            value: member.roles.array().join('\r\n')
+                        }]
+                    }))
+                    .catch(err => console.log(err));
+    
+                break;
+            }
+        }
+    }
+    
+    /**
+     * 
+     * @param {discord.Message} oldMsg 
+     * @param {discord.Message} newMsg 
+     */
+    _onMessageUpdate(oldMsg, newMsg) {
+        const author = oldMsg.author;
+        if(author.bot || oldMsg.content == newMsg.content)
+            return;
+
+        for (const server of this.managedServers) {
+            if (oldMsg.guild.id === server.id) {
+                if(!server.chans.editlog)
+                    break;
+
+                server.chans.editlog.send(`Member updated message in ${oldMsg.channel}: ${author}`, 
+                    util.createRichEmbed({
+                        fields: [
+                            { name: 'From', value: oldMsg.content },
+                            { name: 'To', value: newMsg.content }
+                        ]
+                    }))
+                    .catch(console.log);
+                break;
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param {discord.Message} msg 
+     */
+    _onMessageDelete(msg) {
+        const author = msg.author;
+        if(author.bot)
+            return;
+        for (const server of this.managedServers) {
+            if (msg.guild.id === server.id) {
+                if(!server.chans.editlog)
+                    break;
+    
+                server.chans.editlog.send(`A message was deleted in ${msg.channel}: ${author}`,
+                    util.createRichEmbed({
+                        fields: [{
+                            name: 'Content', 
+                            value: msg.content 
+                        }]
+                    }))
+                    .catch(console.log);
+                break;
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param {discord.Message} msg 
+     */
+    _onMessage(msg) {
+        this._onMessageAsync(msg)
+            .then()
+            .catch(err => console.log(err));
+    }
+
+    _onError() {
+        //TODO
+    }
+    
+    /**
+     * 
+     * @param {discord.Message} msg
+     * @returns {Promise<void>} 
+     */
+    async _onMessageAsync(msg) {
+        if (await this._checkForMemes(msg)) {
+            return;
+        }
+        if (await this._checkForMedia(msg)) {
+            return;
+        }
+        
+        //Allow for new line parsing
+        const message = this._trimMessage(msg);
+        const args = util.argParse(message);
+        const _prefix = args.shift();
+        if (!_prefix.startsWith(this.prefix)) {
+            return;
+        }
+
+        const { func, command } = this._getHandler(msg, args);
+        if (func) {
+            await this._executeHandler(func, msg, args, command, console);
+        }
+    }
+
+    /**
+     * 
+     * @param {discord.Message} msg
+     */
+    _trimMessage(msg) {
+        return msg.content.replace(/<@!?(.*?)>/g,'') // Remove mentions
+            .replace(/^\s+|\s+$/g, '');
+    }
+
+    /**
+     * 
+     * @param {() => void)} func 
+     * @param {discord.Message} msg 
+     * @param {string[]} args 
+     * @param {string} command 
+     * @param {console} console 
+     */
+    async _executeHandler(func, msg, args, command, console) {
+        await util.consumeRateLimitToken(msg);
+        try {
+            func(msg, args, command, console);
+        } catch (err) {
+            if (err && err != 'banlist') {
                 console.log(err);
             }
-        });
+        }
+    }
+
+    /**
+     * 
+     * @param {discord.Message} msg 
+     * @param {string[]} args
+     * @returns {{func: () => void, command: string}}
+     */
+    _getHandler(msg, args) {
+        let type = this.configuration['default-module'];
+        if (args[0] && args[0].startsWith('-')) {
+            type = args[0].substring(1);
+            if (!this.commands[type]) {
+                this._onError(msg);
+                return;
+            }
+            args.shift();
+        }
+
+        const command = args.shift();
+        if (command === 'help') {
+            return { func: () => msg.author.send(util.formatHelpText(this._prefix + ' ', this.helpText[type])), command};
+        }
+
+        return { func: this.commands[type][command], command };
+    }
+
+    /**
+     * 
+     * @param {discord.Message} msg
+     * @returns {Promise<boolean>} 
+     */
+    async _checkForMemes(msg) {
+        if (msg.content.toLowerCase().startsWith('failed to load')) {
+            await util.consumeRateLimitToken(msg);
+            await msg.channel.send('oof');
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 
+     * @param {discord.Message} msg
+     * @returns {Promise<boolean>} 
+     */
+    async _checkForMedia(msg) {
+        // Get stream drawings links automatically
+        if (msg.channel.name === 'media') {
+            const ccChan = util.discObjFind(msg.guild.channels, '^crosscode$');
+            if (ccChan) {
+                const url = this._getJPGUrl(msg.content);
+                if(!url)
+                    return false;
+                if(url.includes('dropbox')) {
+                    // this will auto redirect to raw location
+                    const res = await fetch(url);
+                    ccChan.send(`<@!208763015657553921>! Add this url to stream drawings. ${res.url}`);
+                } else if(url.includes('drive.google.com')) {
+                    const directLink = await this._getDriveFileDirLink(url);
+                    ccChan.send(`<@!208763015657553921>! Add this url to stream drawings. ${directLink}`);
+                }
+            }
+    
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 
+     * @param {discord.Message} msg
+     */
+    _getJPGUrl(msg) {
+        const regexfileURL = /(?:JPG:\s?)(.*)/;
+        if(regexfileURL.test(msg)) {
+            return msg.match(regexfileURL)[1];
+        }
+        return '';
+    }
+    
+    /**
+     * 
+     * @param {string} url 
+     * @returns {Promise<string>}
+     */
+    async getDriveFileDirLink(url) {
+        const regexfileID = /\/d\/(.*?)\//;
+
+        const fileID = url.match(regexfileID)[1];
+        const response = await fetch(`https://drive.google.com/uc?id=${fileID}`);
+        return response.url;
     }
 }
 
-client.on('message', onMessage);
-client.login(process.env.BOT_TOKEN);
+const bot = new Bot();
+bot.start();
