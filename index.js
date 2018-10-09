@@ -277,7 +277,7 @@ class Bot {
 
     /**
      * 
-     * @param {() => void)} func 
+     * @param {(msg: discord.Message, args: string[], command: string, console: console) => void} func 
      * @param {discord.Message} msg 
      * @param {string[]} args 
      * @param {string} command 
@@ -286,7 +286,7 @@ class Bot {
     async _executeHandler(func, msg, args, command, console) {
         await util.consumeRateLimitToken(msg);
         try {
-            func(msg, args, command, console);
+            await func(msg, args, command, console); //Await in case it is async
         } catch (err) {
             if (err && err != 'banlist') {
                 console.log(err);

@@ -1,27 +1,33 @@
-let {
-    readFileSync
-} = require('fs');
-let streamArtLink = function getStreamArt() {
-    let data = readFileSync('stream.txt', 'utf8')
-    return data.split("\n");
-}();
+const fs = require('fs');
 const FanArt = require('./art.d/crosscode-fanart.js');
-let fanArt = new FanArt();
-module.exports = function(instance, {createRichEmbed}) {
-    let commands = {
-        fromstream: function showStreamArt(msg) {
-            let index = parseInt(Math.random() * streamArtLink.length)
-            let image = createRichEmbed({
-                description: "Random stream art",
-                image: streamArtLink[index]
-            });
-            msg.channel.send('', image).catch(function(error) {
-                console.log("streamart error:\n${error}")
-            });
-        },
-        fromfan: function showFanArt(msg) {
-            msg.channel.send('', fanArt.getRandomArt());
-        }
-    };
-    return commands;
+const fanArt = new FanArt();
+
+function getStreamArt() {
+    const data = fs.readFileSync('stream.txt', 'utf8');
+    return data.split('\n');
 }
+
+const streamArtLink = getStreamArt();
+
+/**
+ * 
+ * @param {typeof import('discord.js')} _ 
+ * @param {typeof import('../discord-util.js')} util 
+ * @returns {{[name: string]: ((msg: discord.Message, args: string[], command: string, console: console) => Promise}}
+ */
+module.exports = (_, util) => {
+    return {
+        fromstream: (msg) => {
+            const index = parseInt(Math.random() * streamArtLink.length);
+            return util.sendRichEmbed(msg.channel, '', {
+                description: 'Random stream art',
+                image: streamArtLink[index]
+            })
+                .then()
+                .catch((err) => {
+                    console.log(`streamart error:\n${err}`);
+                });
+        },
+        fromfan: (msg) => msg.channel.send('', fanArt.getRandomArt())
+    };
+};
