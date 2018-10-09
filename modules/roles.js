@@ -61,6 +61,11 @@ module.exports = function(client, util, config, console) {
         add: async function giveRoles(msg, args) {
             var guild = msg.guild;
             var member = msg.member;
+            
+            if (member == null) {
+                msg.reply('You might be trying this from invisble status or from DMs. Try again, please!');
+                return;
+            }
 
             console.log("User " + msg.author.id +
                 " executed add role with arguments: [" + args + "]");
