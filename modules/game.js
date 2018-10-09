@@ -1,45 +1,58 @@
-module.exports = function(instance, util) {
-    let Character = require('./game.d/character.js');
-    let Match = require('./game.d/match.js');
-    let characters = new Map();
-    let matches = new Map();
-    let {
-        findMember
-    } = util;
+/**
+ * 
+ * @param {import('discord.js').Client} _
+ * @param {typeof import('../discord-util.js')} util 
+ * @returns {{[name: string]: ((msg: discord.Message, args: string[], command: string, console: console) => Promise}}
+ */
+module.exports = (_, util) => {
+    const Character = require('./game.d/character.js');
+    const Match = require('./game.d/match.js');
+
+    const characters = new Map();
+    const matches = new Map();
+    
     return {
-        add: function(msg, args) {
-            if (args[0] === "character") {
+        /**
+         * @param {import('discord.js').Message} msg
+         * @param {string[]} args
+         */
+        add: async (msg, args) => {
+            if (args[0] === 'character') {
                 if (characters.has(msg.author.id)) {
-                    msg.reply('but you already have a character!');
+                    await msg.reply('but you already have a character!');
                     return;
                 }
-                var name = args[1];
+                const name = args[1];
                 if (Character.isValidName(name)) {
-                    msg.reply("not a valid name.");
+                    await msg.reply('not a valid name.');
                     return;
                 }
-                var className = Character.getClass(args[2]);
+                const className = Character.getClass(args[2]);
                 if (!className) {
-                    msg.reply("not a valid class.");
+                    await msg.reply('not a valid class.');
                     return;
                 }
-                let newChar = new Character(name, className, msg.author);
+                const newChar = new Character(name, className, msg.author);
                 characters.set(msg.author.id, newChar);
-                msg.reply(`...!\nHere are your stats:\n${newChar.getStats()}`);
+                await msg.reply(`...!\nHere are your stats:\n${newChar.getStats()}`);
             }
         },
-        pvp: function(msg, args) {
-            var challenger = characters.get(msg.author.id);
+        /**
+         * @param {import('discord.js').Message} msg
+         * @param {string[]} args
+         */
+        pvp: async (msg, args) => {
+            const challenger = characters.get(msg.author.id);
             if (!challenger) {
-                msg.reply('you do not have a character.');
+                await msg.reply('you do not have a character.');
                 return;
             }
-            var member = findMember(msg, args[0]);
+            const member = util.findMember(msg, args[0]);
             if (!member) {
                 msg.reply('could not find guild member.');
                 return;
             }
-            var target = characters.get(member.user.id);
+            const target = characters.get(member.user.id);
             if (!target) {
                 msg.reply('they do not have a character.');
                 return;
@@ -48,31 +61,35 @@ module.exports = function(instance, util) {
                 return;
             }
             //this is just in case one or the other deals a finishing blow
-            let newMatch = new Match(challenger, target, msg.channel);
+            const newMatch = new Match(challenger, target, msg.channel);
             matches.set(msg.channel.id, newMatch);
-            msg.channel.send(`${challenger.getName()} is now fighting ${target.getName()}!`);
+            await msg.channel.send(`${challenger.getName()} is now fighting ${target.getName()}!`);
         },
-        attack: function(msg, args) {
+        /**
+         * @param {import('discord.js').Message} msg
+         * @param {string[]} args
+         */
+        attack: async (msg, args) => {
             //should probably break up error checking..
-            var activeMatch = matches.get(msg.channel.id);
+            const activeMatch = matches.get(msg.channel.id);
             if (!activeMatch) {
                 return;
             }
-            let member = activeMatch.findPlayer(msg.author.id);
+            const member = activeMatch.findPlayer(msg.author.id);
             if (!member) {
                 return;
             }
             if (!activeMatch.isTurn(member)) {
-                msg.reply('it is not your turn.');
+                await msg.reply('it is not your turn.');
                 return;
             }
-            let target = findMember(msg, args[0]);
+            let target = util.findMember(msg, args[0]);
             if (!target) {
                 return;
             }
             target = activeMatch.findPlayer(target.id);
             if (!target) {
-                msg.reply('target is not playing a pvp.');
+                await msg.reply('target is not playing a pvp.');
                 return;
             }
             activeMatch.attackSequence(target);
@@ -82,14 +99,17 @@ module.exports = function(instance, util) {
                 return;
             }
             activeMatch.nextTurn();
-            msg.reply(`It is now ${activeMatch.getTurnName()}`);
+            await msg.reply(`It is now ${activeMatch.getTurnName()}`);
         },
-        stats: function(msg) {
-            var character = characters.get(msg.author.id);
+        /**
+         * @param {import('discord.js').Message} msg
+         */
+        stats: async (msg) => {
+            const character = characters.get(msg.author.id);
             if (!character) {
                 return;
             }
-            msg.channel.send(character.getStats());
+            await msg.channel.send(character.getStats());
         }
     };
-}
+};
