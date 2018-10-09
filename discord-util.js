@@ -275,7 +275,11 @@ exports.getRoles = function(roleType, guild) {
 }
 exports.log = function(msg, message) {
   var server = findServer(msg.guild);
-  return server.chans["syslog"].send(message);
+  if (server.chans["syslog"]) {
+    return server.chans["syslog"].send(message);
+  } else {
+    return null; 
+  }
 }
 exports.getAllServers = function getAllServers(client, servers, console) {
     if(manageServs.length === 0)
