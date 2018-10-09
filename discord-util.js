@@ -460,7 +460,11 @@ exports.createSend = function(text, options) {
  * @returns {(msg: Discord.Message) => void}
  */
 exports.createSendDynamic = function(text, options) {
-    return (msg) => msg.channel.send(text, options);
+    if (options) {
+        return (msg) => msg.channel.send(text(msg), options(msg));
+    } else {
+        return (msg) => msg.channel.send(text(msg));
+    }
 }
 
 
