@@ -1,6 +1,6 @@
 /**
  * 
- * @param {typeof import('discord.js')} _ 
+ * @param {import('discord.js').Client} _
  * @param {typeof import('../discord-util.js')} util 
  * @returns {{[name: string]: ((msg: discord.Message, args: string[], command: string, console: console) => Promise}}
  */
