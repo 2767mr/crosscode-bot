@@ -455,6 +455,17 @@ exports.createSend = function(text, options) {
 
 /**
  * 
+ * @param {() => string} text 
+ * @param {() => any} content 
+ * @returns {(msg: Discord.Message) => void}
+ */
+exports.createSendDynamic = function(text, options) {
+    return (msg) => msg.channel.send(text, options);
+}
+
+
+/**
+ * 
  * @param {Discord.Message} msg
  */
 exports.consumeRateLimitToken = function(message) {

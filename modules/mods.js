@@ -1,20 +1,20 @@
-module.exports = function(instance, util) {
-    const {
-        createRichEmbed
-    } = util;
-    const ModsInfo = new(require('./mods.d/mods.js'));
-    let commands = {
-        get: function getMods(msg) {
-            msg.channel.send('', ModsInfo.getMods() || createRichEmbed({
-                title: 'Mods not Available'
-            }));
-        },
-        installation: function getInstallationGuide(msg) {
-            msg.channel.send('', createRichEmbed({
-                title: 'Installation guide',
-                url: 'https://github.com/CCDirectLink/CCLoader/wiki/Install-mods'
-            }));
-        }
+/**
+ * 
+ * @param {typeof import('discord.js')} _ 
+ * @param {typeof import('../discord-util.js')} util 
+ * @returns {{[name: string]: ((msg: discord.Message, args: string[], command: string, console: console) => Promise}}
+ */
+module.exports = function(_, util) {
+    const { Mods } = require('./mods.d/mods.js');
+    const modsInfo = new Mods();
+
+    return {
+        get: util.createSendDynamic(() => '', modsInfo.getMods() || util.createRichEmbed({
+            title: 'Mods not Available'
+        })),
+        installation: util.createSendRichEmbed('', {
+            title: 'Installation guide',
+            url: 'https://github.com/CCDirectLink/CCLoader/wiki/Install-mods'
+        })
     };
-    return commands;
-}
+};
