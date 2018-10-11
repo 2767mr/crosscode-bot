@@ -1,25 +1,27 @@
+/**
+ * 
+ * @param {import('discord.js').Client} _
+ * @param {typeof import('../discord-util.js')} util 
+ * @returns {{[name: string]: ((msg: discord.Message, args: string[], command: string, console: console) => Promise}}
+ */
 module.exports = function(instance, util) {
-    const Discord = require("discord.js");
-    const {
-        findMember,
-        createRichEmbed,
-    } = util;
+    async function error(msg) {
+        if (!msg.channel.nsfw) {
+            await msg.reply('this channel is sfw. Please try again in a nsfw channel');
+            return true;
+        }
+        return false;
+    }
 
-    let commands = {
-        lewd: function showLewdArt(msg, args, command) {
-            if (commands.error(msg, command))
+    return {
+        lewd: async (msg, args, command) => {
+            if (await error(msg, command))
                 return;
-            msg.channel.send('', createRichEmbed({
-                description: "( ͡° ͜ʖ ͡°)",
+            
+            return await util.sendRichEmbed('', {
+                description: '( ͡° ͜ʖ ͡°)',
                 image: 'https://images-ext-1.discordapp.net/external/RNdA2IorjgoHeslQ9Rh8oos1nkK56Y6_w4sjUaFVBC4/https/image.ibb.co/jJLNiG/leadaki.png?width=185&height=250'
-            }))
-        },
-        error: function error(msg, command) {
-            if (!msg.channel.nsfw) {
-                msg.reply("this channel is sfw. Please try again in a nsfw channel");
-                return true;
-            }
+            });
         },
     };
-    return commands;
-}
+};

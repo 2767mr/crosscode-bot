@@ -1,12 +1,13 @@
-module.exports = function(instance, util) {
-    let {
-        createRichEmbed
-    } = util;
+/**
+ * 
+ * @param {import('discord.js').Client} _
+ * @param {typeof import('../discord-util.js')} util 
+ * @returns {{[name: string]: ((msg: discord.Message, args: string[], command: string, console: console) => Promise}}
+ */
+module.exports = (_, util) => {
     return {
-        "EXPLOSION!": function(msg) {
-            msg.channel.send('💥', createRichEmbed({
-                image: 'https://cdn.discordapp.com/attachments/380588134712475665/383777401529696256/tenor.gif'
-            }))
-        }
-    }
+        'EXPLOSION!': util.createSendRichEmbed('💥', {
+            image: 'https://cdn.discordapp.com/attachments/380588134712475665/383777401529696256/tenor.gif'
+        })
+    };
 };

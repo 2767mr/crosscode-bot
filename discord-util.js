@@ -429,6 +429,49 @@ exports.setupDMRatelimiter = function(config) {
     }
 }
 
+/**
+ * 
+ * @param {Discord.TextChannel} channel 
+ * @param {string} text 
+ * @param {*} embed 
+ */
+exports.sendRichEmbed = function(channel, text, embed) {
+    return channel.send(text, embed);
+}
+
+exports.createSendRichEmbed = function(text, embed) {
+    return (msg) => exports.sendRichEmbed(msg.channel, text, embed);
+}
+
+/**
+ * 
+ * @param {string} text 
+ * @param {*} content 
+ * @returns {(msg: Discord.Message) => void}
+ */
+exports.createSend = function(text, options) {
+    return (msg) => msg.channel.send(text, options);
+}
+
+/**
+ * 
+ * @param {() => string} text 
+ * @param {() => any} content 
+ * @returns {(msg: Discord.Message) => void}
+ */
+exports.createSendDynamic = function(text, options) {
+    if (options) {
+        return (msg) => msg.channel.send(text(msg), options(msg));
+    } else {
+        return (msg) => msg.channel.send(text(msg));
+    }
+}
+
+
+/**
+ * 
+ * @param {Discord.Message} msg
+ */
 exports.consumeRateLimitToken = function(message) {
     // Ratelimiter server selector
     let ratelimiterServer;
