@@ -141,14 +141,22 @@ function discObjFind(obj, name) {
     else
         throw `Could not find ${name} in ${obj}`;
 }
-exports.discObjFind = function(obj, name) {
-    try {
-        return discObjFind(obj, name);
-    } catch(e) {
-        console.log(e);
+
+/**
+ * @param {Discord.Role[]} arr
+ * @param {string} name
+ */
+exports.getFromName = (arr, name) => {
+    const re = new RegExp(name.toString().trim(), 'i');
+    const result = arr.find(val => re.test(val.name));
+    if (arr && name && result) {
+        return result;
+    } else {
+        console.log(new Error(`Could not find ${name} in ${arr}`));
+        return null;
     }
-    return null;
-}
+};
+
 function findModServer(client, serverJson, console) {
     let retval = {id: "", chans: {}, pending: [], "auto-role": [], exclusiveSets: {}};
     try {
@@ -164,47 +172,47 @@ function findModServer(client, serverJson, console) {
         retval.greet = serverJson.greeting.replace(/\$PREFIX/g, process.env.BOT_PREFIX);
         for (let role in serverJson.channels) {
           if(!serverJson.channels[role]) continue;
-          retval.chans[role] = exports.discObjFind(server.channels, serverJson.channels[role]);
+          retval.chans[role] = discObjFind(server.channels, serverJson.channels[role]);
         }
 
         if (serverJson.roles.pending) {
             for (let role of serverJson.roles.pending) {
-              retval.pending.push(exports.discObjFind(server.roles, role));
+              retval.pending.push(discObjFind(server.roles, role));
             }
         }
 
         if(serverJson.roles["auto-role"]) {
           for (let role of serverJson.roles["auto-role"]) {
-            retval['auto-role'].push(exports.discObjFind(server.roles, role));
+            retval['auto-role'].push(discObjFind(server.roles, role));
           }
         }
         if (serverJson.roles.blacklist) {
             for (let role of serverJson.roles.blacklist) {
-              roleBlacklist.push(exports.discObjFind(server.roles, role).id);
+              roleBlacklist.push(discObjFind(server.roles, role).id);
             }
         }
 
         if (serverJson.roles.whitelist) {
             for (let role of serverJson.roles.whitelist) {
-                roleWhitelist.push(exports.discObjFind(server.roles, role).id);
+                roleWhitelist.push(discObjFind(server.roles, role).id);
             }
         }
 
         if (serverJson.roles.admin) {
             for(let role of serverJson.roles.admin) {
-                roleAdmin.push(exports.discObjFind(server.roles, role).id);
+                roleAdmin.push(discObjFind(server.roles, role).id);
             }
         }
 
         if (serverJson.roles.exclusivities) {
             for (let roleSet of serverJson.roles.exclusivities) {
                 for (let exRole of roleSet) {
-                    var exRoleID = exports.discObjFind(server.roles, exRole).id;
+                    var exRoleID = discObjFind(server.roles, exRole).id;
                     if (!retval.exclusiveSets.hasOwnProperty(exRoleID)) {
                         retval.exclusiveSets[exRoleID] = new Set();
                     }
                     for (let exRole_innerCheck of roleSet) {
-                        var roleToAddID = exports.discObjFind(server.roles, exRole_innerCheck).id;
+                        var roleToAddID = discObjFind(server.roles, exRole_innerCheck).id;
                         if (roleToAddID !== exRoleID) {
                             retval.exclusiveSets[exRoleID].add(roleToAddID);
                         }
@@ -325,7 +333,7 @@ function getChanID(msg) {
 exports.greetingsParse = function(guild, msg) {
    var chan;
    while(Array.isArray((chan = getChanID(msg)))) {
-       let channel = exports.discObjFind(guild.channels, chan[1]) || "#invalid-channel";
+       let channel = discObjFind(guild.channels, chan[1]) || "#invalid-channel";
        msg = msg.replace(new RegExp(chan[0], 'g'), channel.toString());
    }
    return msg;
