@@ -13,7 +13,7 @@
     "default-module": "general",
 
     "activities": [
-        {"type": "PLAYING",  "name": "profile picture art by DiceSMS"},
+        {"type": "PLAYING",  "name": "pfp art by DiceSMS"},
         {"type": "PLAYING",  "name": "Artist Twitter: https://twitter.com/DiceSMS"},
         {"type": "PLAYING",  "name": "Artist Tumblr: http://dicesms.tumblr.com/"}
     ],
