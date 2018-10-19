@@ -14,8 +14,8 @@
 
     "activities": [
         {"type": "PLAYING",  "name": "profile picture art by DiceSMS"},
-        {"type": "PLAYING",  "name": "Twitter: https://twitter.com/DiceSMS"},
-        {"type": "PLAYING",  "name": "Tumblr: http://dicesms.tumblr.com/"}
+        {"type": "PLAYING",  "name": "Artist Twitter: https://twitter.com/DiceSMS"},
+        {"type": "PLAYING",  "name": "Artist Tumblr: http://dicesms.tumblr.com/"}
     ],
     "activity-types": [
         "PLAYING",
