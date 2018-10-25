@@ -44,13 +44,23 @@ class Character {
         }
         return stats;
     }
-    addLeveL(level, showMessage) {
+    /**
+     * 
+     * @param {number} level 
+     * @param {boolean} showMessage 
+     */
+    addLevel(level, showMessage) {
         this.level += level;
         showMessage && this.user.send(`Wow! You are now level ${this.level}.`);
     }
     getName() {
         return this.name;
     }
+    /**
+     * 
+     * @param {number} newXP 
+     * @param {boolean} showMessage 
+     */
     addXP(newXP, showMessage) {
         const levelUpXP = 1000;
         const newLevel = parseInt((this.xp + newXP) / levelUpXP);
@@ -74,6 +84,10 @@ class Character {
     isAlive() {
         return this.hp > 0;
     }
+    /**
+     * 
+     * @param {Character} target 
+     */
     attack(target) {
         target.changeHp(-20);
         return {

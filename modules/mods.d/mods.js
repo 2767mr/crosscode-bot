@@ -8,6 +8,11 @@ const url = 'https://raw.githubusercontent.com/CCDirectLink/CCModDB/master/mods.
 const CCLoaderLink = 'https://github.com/CCDirectLink/CCLoader';
 const CCModDB = 'https://github.com/CCDirectLink/CCModDB';
 
+/**
+ * A mod's information, as described by the DirectLink mods database (`mods.json`).
+ * @typedef {{name: string, description: string, dir: ?{"any": string}, license: ?string, page: {name: string, url: string}[], archive_link: string, hash: {type: string}, version: string}} Mod
+ */
+
 module.exports = class Mods {
     constructor() {
         this.embed = null;
@@ -16,6 +21,10 @@ module.exports = class Mods {
         setInterval(() => this._getMods(), timer);
     }
 
+    /**
+     * 
+     * @param {Mod} mod 
+     */
     createModFromString(mod) {
         const config = {
             name: `${mod.name} (${mod.version})`,

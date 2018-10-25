@@ -17,8 +17,11 @@ const roleAdmin = [];
 const rateLimiters = {};
 /** @type {{[guild: string]: {[type: string]: FastRateLimit}}} */
 const banLists = {};
+/** @type {{[type: string]: FastRateLimit}} */
 const selfRateLimiters = {};
+/** @type {string[]} */
 const syslogSilencedUserIDs = [];
+/** @type {{[guildName: string]: {[type: string]: {threshold: number, ttl: number, [bantime]: number}}}} */
 let rateLimiterDefaultConfig = {};
 let timerCounter = 0;
 
