@@ -3,7 +3,7 @@ const { FastRateLimit } = require('fast-ratelimit');
 
 /** @type {{[name: string]: {id: string, guildId: string, name: string}}} */
 let knownEmotes = {};
-/** @type {{id: string, chans: {[name: string]: discord.GuildChannel}, pending: discord.Role[], 'auto-role': discord.Role[], exclusiveSets: {[name: string]: Set<string>}}[]} */
+/** @type {{id: string, chans: {[name: string]: discord.TextChannel}, pending: discord.Role[], 'auto-role': discord.Role[], exclusiveSets: {[name: string]: Set<string>}}[]} */
 let managedServers = []; //cache
 
 /** @type {string[]} */
@@ -131,6 +131,7 @@ class EmojiUtil {
      * 
      * @param {discord.Message} [msg]
      * @param {string} name
+     * @returns {{id: string, toString: () => string}}
      */
     getEmote(msg, name) {
         //just in case for unintentional whitespace
@@ -181,6 +182,15 @@ class MessageUtil {
     }
 
     /**
+     * @param {Object} opts Embed options. See https://discord.js.org/#/docs/main/stable/class/RichEmbed for more details.
+     * @param {Object[]} opts.fields
+     * @param {Date} opts.timestamp
+     * @param {string} opts.description
+     * @param {Object} opts.image
+     * @param {string} opts.title
+     * @param {Object} opts.author
+     * @param {string} opts.url
+     * @param {Object} opts.footer
      * @returns {discord.RichEmbed}
      */
     createRichEmbed(opts) {
@@ -582,10 +592,18 @@ class ConfigUtil {
 }
 
 class RatelimiterUtil {
+    /**
+     *
+     * @param {{[type: string]: {threshold: number, ttl: number, [bantime]: number}}} rlConfig
+     */
     setRateLimiterDefaultConfig(rlConfig) {
         rateLimiterDefaultConfig = rlConfig;
     }
     
+    /**
+     *
+     * @param {{[ratelimiterType: string]: {threshold: number, ttl: number}}} config
+     */
     setupSelfRateLimiters(config) {
         if (config['syslog-ratelimit-user']) {
             selfRateLimiters.syslogRatelimit = new FastRateLimit(config['syslog-ratelimit-user']);
@@ -602,6 +620,10 @@ class RatelimiterUtil {
         }
     }
     
+    /**
+     *
+     * @param {{[ratelimiterType: string]: {threshold: number, ttl: number}}} config
+     */
     setupDMRatelimiter(config) {
         // Setup additional ratelimiter for DM messages based on defaults
         rateLimiters['dm'] = {};
@@ -730,6 +752,7 @@ class RatelimiterUtil {
      * @param {discord.Message} msg 
      * @param {string} scope
      * @param {{[type: string]: FastRateLimit}}
+     * @returns {Promise<void>}
      */
     async _printRateLimitError(msg, scope, ratelimiterServer) {
         const guild = msg.guild;
