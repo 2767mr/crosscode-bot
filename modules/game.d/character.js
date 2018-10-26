@@ -39,7 +39,7 @@ class Character {
         let stats = '';
         for (const key in this) {
             if (this.hasOwnProperty(key)) {
-                stats += (key + ': ' + this[key] + '\n');
+                stats += `${key}: ${this[key]}\n`;
             }
         }
         return stats;
