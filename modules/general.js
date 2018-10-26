@@ -40,11 +40,11 @@ module.exports = function(instance, util) {
         return messagePayloads;
     }
 
+
     return {
         hug: () => console.log('todo .cc -g hug'),
         lewd: (msg) => msg.react(util.getEmote(msg, 'ohno').id),
         thinking: (msg) => msg.react(util.getEmote(msg, 'leaTHINK').id),
-
         satoshi: util.createSend('is karoshi'),
         cloudlea: util.createSendRichEmbed('', {
             image: 'https://images-ext-1.discordapp.net/external/C8ZfRnUDaIaHkZNgR6TP81kCEbc1YJrtsnG5J-TTSzM/https/cdn.discordapp.com/attachments/373163281755537420/380813466354843649/steam-cloud-600x368.png?width=500&height=307'
