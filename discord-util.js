@@ -322,6 +322,7 @@ class MessageUtil {
     /**
      * 
      * @param {string} id 
+     * @returns {boolean}
      */
     _isId(id) {
         return (id.startsWith('<@') || id.startsWith('<@!')) && id.endsWith('>');
