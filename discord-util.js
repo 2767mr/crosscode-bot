@@ -234,13 +234,14 @@ class MessageUtil {
     /**
      * @param {discord.Message} msg
      * @param {string} message
+     * @returns {Promise<discord.Message>}
      */
     log(msg, message) {
         const server = findServer(msg.guild);
         if (server.chans['syslog']) {
             return server.chans['syslog'].send(message);
         } else {
-            return null; 
+            return Promise.resolve(); 
         }
     }
     

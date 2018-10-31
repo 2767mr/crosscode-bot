@@ -24,6 +24,7 @@ module.exports = class Mods {
     /**
      * 
      * @param {Mod} mod 
+     * @returns {name: string, value: string}
      */
     createModFromString(mod) {
         const config = {
