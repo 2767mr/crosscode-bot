@@ -42,7 +42,7 @@ module.exports = class CrossCodeStream {
         const users = await this._getTwitchUsersByIds(streamerIds);
 
         this.ccStreamers = new Map();
-        for (const [user, index] of users.entries()) {
+        for (const [index, user] of users.entries()) {
             const stream = streamData[index];
             const streamObject = {
                 title : stream.title,

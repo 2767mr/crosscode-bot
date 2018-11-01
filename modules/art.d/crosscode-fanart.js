@@ -71,7 +71,8 @@ class CrossCodeFanArt {
 
         const fanart_xml = parser.parseFromString(response, 'text/xml');
         const fanart_items = fanart_xml.getElementsByTagName('item');
-        for (const fan_item of fanart_items) {
+        for (let i = 0; i < fanart_items.length; i++) {
+            const fan_item = fanart_items[i];
             const title = fan_item.getElementsByTagName('title')[0].textContent;
             const author = fan_item.getElementsByTagName('media:credit')[0].textContent;
             const postLink = fan_item.getElementsByTagName('link')[0].textContent;
