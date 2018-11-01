@@ -9,9 +9,9 @@ module.exports = function(_, util) {
     const modsInfo = new Mods();
 
     return {
-        get: util.createSendDynamic(() => '', modsInfo.getMods() || util.createRichEmbed({
+        get: util.createSendDynamic(() => '', () => (modsInfo.getMods() || util.createRichEmbed({
             title: 'Mods not Available'
-        })),
+        }))),
         installation: util.createSendRichEmbed('', {
             title: 'Installation guide',
             url: 'https://github.com/CCDirectLink/CCLoader/wiki/Install-mods'

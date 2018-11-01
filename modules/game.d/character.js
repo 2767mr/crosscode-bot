@@ -1,4 +1,10 @@
 class Character {
+    /**
+     * 
+     * @param {string} name 
+     * @param {string} className 
+     * @param {import('discord.js').User} User 
+     */
     constructor(name, className, User) {
         this.name = name;
         this.className = className;
@@ -30,28 +36,38 @@ class Character {
         return this.inPvP;
     }
     getStats() {
-        stats = "";
-        for (var key in this) {
+        let stats = '';
+        for (const key in this) {
             if (this.hasOwnProperty(key)) {
-                stats += (key + ": " + this[key] + "\n");
+                stats += `${key}: ${this[key]}\n`;
             }
         }
         return stats;
     }
-    addLeveL(level, showMessage) {
+    /**
+     * 
+     * @param {number} level 
+     * @param {boolean} showMessage 
+     */
+    addLevel(level, showMessage) {
         this.level += level;
-        showMessage && User.send(`Wow! You are now level ${this.level}.`);
+        showMessage && this.user.send(`Wow! You are now level ${this.level}.`);
     }
     getName() {
         return this.name;
     }
+    /**
+     * 
+     * @param {number} newXP 
+     * @param {boolean} showMessage 
+     */
     addXP(newXP, showMessage) {
-        let levelUpXP = 1000;
-        let newLevel = parseInt((this.xp + newXP) / levelUpXP);
+        const levelUpXP = 1000;
+        const newLevel = parseInt((this.xp + newXP) / levelUpXP);
         if (newLevel > 0)
-            addLevel(newLevel, showMessage);
+            this.addLevel(newLevel, showMessage);
         this.xp += (this.xp + newXP) % levelUpXP;
-        showMessage && User.send(`You got ${newXP} xp.`);
+        showMessage && this.user.send(`You got ${newXP} xp.`);
     }
     addWin() {
         this.wins += 1;
@@ -68,7 +84,11 @@ class Character {
     isAlive() {
         return this.hp > 0;
     }
-    attack(target, name) {
+    /**
+     * 
+     * @param {Character} target 
+     */
+    attack(target) {
         target.changeHp(-20);
         return {
             damage: 20
@@ -79,12 +99,12 @@ class Character {
             return false;
     }
     static getClass(className) {
-        var names = ["Spheromancer", "Triblader", "Quadroguard", "Pentafist", "Hexacast"];
-        let lowerClassName = className.toLowerCase();
-        var index = names.indexOf(lowerClassName[0].toUpperCase() + lowerClassName.substring(1));
+        const names = ['Spheromancer', 'Triblader', 'Quadroguard', 'Pentafist', 'Hexacast'];
+        const lowerClassName = className.toLowerCase();
+        const index = names.indexOf(lowerClassName[0].toUpperCase() + lowerClassName.substring(1));
         if (index > -1)
             return names[index];
         return null;
     }
 }
-module.exports = Character
+module.exports = Character;
