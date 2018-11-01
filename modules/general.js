@@ -287,7 +287,7 @@ module.exports = function(instance, util) {
             let message = '\n';
             for (const emote of em) {
                 const thonk = util.getEmote(msg, emote);
-                const emojiLine = em + ' ' + thonk + '\n';
+                const emojiLine = emote + ' ' + thonk + '\n';
                 if (message.length + emojiLine.length > 2000) {
                     await msg.channel.send(message);
                     message = '\n';

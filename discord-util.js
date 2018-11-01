@@ -95,20 +95,20 @@ class EmojiUtil {
     getAllEmotes(client) {
         //to minimize the possibility of spawning deleted emotes
         knownEmotes = {};
-        for (const [realName, emote] of client.emojis) {
+        for (const [_, emote] of client.emojis) {
             if (emote.animated) {
                 continue;
             }
     
-            let name = realName;
+            let name = emote.name;
             for (let i = 1; knownEmotes[name]; i++) {
-                name = realName + i;
+                name = emote.name + i;
             }
     
             knownEmotes[name] = {
                 id: emote.id,
                 guildId: emote.guild.id,
-                name: realName
+                name: emote.name
             };
         }
     }
