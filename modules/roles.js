@@ -163,7 +163,7 @@ module.exports = (client, util, config, console) => {
          * @param {string[]} args
          */
         rm: async function(msg, args){
-            const member = msg.member;
+            let member = msg.member;
 
             console.log('User ' + msg.author.id +
                 ' executed rm role with arguments: [' + args + ']');
