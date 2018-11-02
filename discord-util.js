@@ -13,7 +13,9 @@ let selfRateLimiters = {};
 let syslogSilencedUserIDs = [];
 let rateLimiterDefaultConfig = {};
 let timerCounter = 0;
-
+let devIds = [
+  "208763015657553921"
+];
 exports.getAllEmotes = function(client) {
     //to minimize the possibility of spawning deleted emotes
     knownEmotes = {};
@@ -37,7 +39,7 @@ exports.getCacheEmotesIds = function(guildId) {
     for (var i in knownEmotes) {
         var emote = knownEmotes[i];
         //since o
-        if (!emote.animated || (guildId !== undefined && emote.animated && emote.guidId === guidID)) {
+        if (guildId !== undefined && emote.animated && emote.guidId === guidID) {
             ids.push(i);
         }
     }
@@ -66,6 +68,9 @@ exports.getEmote = function(object, name) {
         return {
             id: emote.id,
             toString: function() {
+                if(emote.animated) {
+                  return `<a:${emote.name}:${emote.id}>`;
+                }
                 return `<:${emote.name}:${emote.id}>`;
             }
         };
@@ -122,6 +127,16 @@ exports.createRichEmbed = function(opts) {
 exports.formatHelpText = function(invoc, helpText) {
     let prefix = invoc.replace(/\s[^\s]+$/, '');
     return `\`\`\`md\n${helpText.replace(/^#.*\n/mg, '').replace(/INVOC/g, prefix)}\n\`\`\``;
+};
+
+exports.isFromBotDeveloper = function(msg) {
+    for(const id of devIds) {
+        if(id === msg.author.id) {
+            return true;
+        }
+    }
+    return false;
+   
 };
 
 exports.isFromAdmin = function(msg) {
@@ -278,7 +293,7 @@ exports.log = function(msg, message) {
   if (server.chans["syslog"]) {
     return server.chans["syslog"].send(message);
   } else {
-    return null; 
+    return null;
   }
 }
 exports.getAllServers = function getAllServers(client, servers, console) {
@@ -430,10 +445,10 @@ exports.setupDMRatelimiter = function(config) {
 }
 
 /**
- * 
- * @param {Discord.TextChannel} channel 
- * @param {string} text 
- * @param {*} embed 
+ *
+ * @param {Discord.TextChannel} channel
+ * @param {string} text
+ * @param {*} embed
  */
 exports.sendRichEmbed = function(channel, text, embed) {
     return channel.send(text, embed);
@@ -444,9 +459,9 @@ exports.createSendRichEmbed = function(text, embed) {
 }
 
 /**
- * 
- * @param {string} text 
- * @param {*} content 
+ *
+ * @param {string} text
+ * @param {*} content
  * @returns {(msg: Discord.Message) => void}
  */
 exports.createSend = function(text, options) {
@@ -454,9 +469,9 @@ exports.createSend = function(text, options) {
 }
 
 /**
- * 
- * @param {() => string} text 
- * @param {() => any} content 
+ *
+ * @param {() => string} text
+ * @param {() => any} content
  * @returns {(msg: Discord.Message) => void}
  */
 exports.createSendDynamic = function(text, options) {
@@ -469,7 +484,7 @@ exports.createSendDynamic = function(text, options) {
 
 
 /**
- * 
+ *
  * @param {Discord.Message} msg
  */
 exports.consumeRateLimitToken = function(message) {
