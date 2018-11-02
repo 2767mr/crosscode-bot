@@ -169,9 +169,12 @@ module.exports = (client, util, config, console) => {
                 ' executed rm role with arguments: [' + args + ']');
 
             // users were mentioned
-            if (msg.mentions.members.size
-                && !util.isFromAdmin(msg)) {
-                return await msg.reply('You are not an admin');
+            if (msg.mentions.members.size) {
+                if (!util.isFromAdmin(msg)) {
+                    msg.reply('You are not an admin');
+                    return;
+                }
+                member = msg.mentions.members.first();
             }
             const roles = fetchRoles(msg.guild.roles, args.join(' ').split(','));
             if (roles) {
