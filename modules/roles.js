@@ -1,27 +1,31 @@
-module.exports = function(client, util, config, console) {
-    function fetchRoles(obj, args) {
-        let roles = [],
-            role;
-        let bl = util.getRoleBlacklist();
-        let wl = util.getRoleWhitelist();
-        for (let arg of args) {
-            //          console.log(util.discObjFind(obj, arg), " ", arg);
-            if ((role = util.discObjFind(obj, arg)) &&
-                wl.indexOf(role.id) !== -1 // use whitelist
-                //              && bl.indexOf(role.id) === -1 // use blacklist
-            )
-                roles.push(role);
-        }
-        return roles;
-    }
+/**
+ *
+ * @param {import('discord.js').Client} client
+ * @param {typeof import('../discord-util.js')} util
+ * @param {*} config
+ * @param {console} console
+ * @returns {{[name: string]: ((msg: discord.Message, args: string[], command: string, console: console) => Promise}}
+ */
+module.exports = (client, util, config, console) => {
+    /**
+     *
+     * @param {import('discord.js').Role[]} roles
+     * @param {string[]} args
+     */
+    function fetchRoles(roles, args) {
+        const bl = util.getRoleBlacklist();
+        const wl = util.getRoleWhitelist();
 
-    function fetchRole(roles, roleName) {
-        return util.discObjFind(roles, roleName);
+        return args
+            .map(arg => util.getFromName(roles, arg))
+            .filter(role => role && wl.indexOf(role.id) > -1 && bl.indexOf(role.id) == -1);
     }
-
-    function getRolesName(roles) {
-        return roles.map(function(element) {
-            if (element.name.indexOf("@") == 0)
+    /**
+     * @param {import('discord.js').Role[]} roles
+     */
+    function getRoleNames(roles) {
+        return roles.map((element) => {
+            if (element.name.indexOf('@') == 0)
                 return element.name.substring(1);
             return element.name;
         });
@@ -30,45 +34,59 @@ module.exports = function(client, util, config, console) {
     /**
     * Removes roles not pertaining to set `set` from Discord user `user`
     * and role array **reference** `rolesToAdd_Ref`
-    * @param {Discord::GuildMember} user - User to remove roles from
-    * @param {Discord::Role[]} rolesToAdd_Ref - Reference to role array to
+    * @param {import('discord.js').GuildMember} user - User to remove roles from
+    * @param {import('discord.js').Role[]} rolesToAdd_Ref - Reference to role array to
     *                                           remove roles from
-    * @param {Set} set - Set that defines which roles will be removed
+    * @param {Set<import('discord.js').Role>} set - Set that defines which roles will be removed
     */
     async function removeOtherRolesFromSet(user, rolesToAdd_Ref, set) {
-        for (var i = 0; i < rolesToAdd_Ref.length; i++) {
+        for (let i = 0; i < rolesToAdd_Ref.length; i++) {
             if (set.has(rolesToAdd_Ref[i].id)) {
                 rolesToAdd_Ref.splice(i, 1);
                 i--;
             }
         }
 
-        for (var role of user.roles.array()) {
+        for (const role of user.roles) {
             if (set.has(role.id)) {
                 await user.removeRole(role);
             }
         }
     }
-    let commands = {
-        countMembers: function countAmount(msg, args) {
-            var guild = msg.guild;
-            var autoRoles = util.getRoles('auto-role', guild);
-            var members = guild.members.filter(function(member) {
-                return member.roles.has(autoRoles[0].id);
-            });
-            msg.channel.send(`There are ${members.size} members.`);
+    return {
+        /**
+         * @param {import('discord.js').Message} msg
+         */
+        countMembers: (msg) => msg.channel.send(`There are ${msg.guild.members.size} members.`),
+        /**
+         * @param {import('discord.js').Message} msg
+         */
+        get: (msg) => msg.channel.send('```\n' + getRoleNames(msg.guild.roles).join('\n') + '```'),
+        /**
+         * @param {import('discord.js').Message} msg
+         */
+        update: (msg) => {
+            if (util.isFromAdmin(msg)) {
+                util.updateServers(client, console);
+                console.log('Updated servers');
+                return msg.channel.send('Updated successfully');
+            }
         },
-        add: async function giveRoles(msg, args) {
-            var guild = msg.guild;
-            var member = msg.member;
-            
+        /**
+         * @param {import('discord.js').Message} msg
+         * @param {string[]} args
+         */
+        add: async (msg, args) => {
+            const guild = msg.guild;
+            const member = msg.mentions.members.first() || msg.member;
+
             if (member === null) {
                 msg.reply('You might be trying this from invisble status or from DMs. Try again, please!');
                 return;
             }
 
-            console.log("User " + msg.author.id +
-                " executed add role with arguments: [" + args + "]");
+            console.log('User ' + msg.author.id +
+                ' executed add role with arguments: [' + args + ']');
 
             // users were mentioned
             if (msg.mentions.members.size) {
@@ -89,23 +107,29 @@ module.exports = function(client, util, config, console) {
                 }
             }
 
-            if (roles.length === 0) {
-                msg.channel.send(`Could not add any new roles.`);
-                return;
-            }
-            if (!util.hasRoles('auto-role', guild, member, console)) {
-                var autoRoles = util.getRoles('auto-role', guild);
-                for (let role of autoRoles) {
+            const roles = fetchRoles(msg.guild.roles, args.join(' ').split(','));
+
+            if (roles.length > 0 && !util.hasRoles('auto-role', guild, member, console)) {
+                const autoRoles = util.getRoles('auto-role', guild);
+                for (const role of autoRoles) {
                     roles.push(role);
                 }
             }
 
+            const newRoles = roles.filter(role => member.roles.has(role.id));
+            const dupRoles = member.roles.filterArray(role => roles.indexOf(role) > -1);
+
+            if (newRoles.length === 0) {
+                return await msg.channel.send('Could not add any new roles.');
+            }
+
             // Find inputted roles within existing exclusivity sets,
             // and remove the other roles from each set from the users' roles.
-            let exclusiveSets = util.getRoles('exclusiveSets', guild);
-            for (role of roles) {
+            const exclusiveSets = util.getRoles('exclusiveSets', guild);
+            for (const role of roles) {
                 if (exclusiveSets[role.id]) {
                     await removeOtherRolesFromSet(member, roles, exclusiveSets[role.id]);
+                    break;
                 }
             }
 
@@ -140,33 +164,33 @@ module.exports = function(client, util, config, console) {
                 console.log("Is not an admin");
             }
         },
-        rm: function takeRoles(msg, args) {
-            var member = msg.member;
+        /**
+         * @param {import('discord.js').Message} msg
+         * @param {string[]} args
+         */
+        rm: async (msg, args) => {
+            const member = msg.mentions.members.first() || msg.member;
 
-            console.log("User " + msg.author.id +
-                " executed rm role with arguments: [" + args + "]");
+            console.log('User ' + msg.author.id +
+                ' executed rm role with arguments: [' + args + ']');
 
             // users were mentioned
-            if (msg.mentions.members.size) {
-                if (!util.isFromAdmin(msg)) {
-                    msg.reply('You are not an admin');
-                    return;
-                }
-                member = msg.mentions.members.first();
+            if (msg.mentions.members.size
+                && !util.isFromAdmin(msg)) {
+                return await msg.reply('You are not an admin');
             }
-            let role = fetchRoles(msg.guild.roles, args.join(" ").split(","));
-            if (role) {
-                member.removeRoles(role).then(function(member) {
-                    var oldRoles = getRolesName(role).listjoin('or');
-                    msg.channel.send(`${member} is no longer ${oldRoles}`);
-                    util.log(msg, `Removed ${oldRoles} from ${member}`);
-                }).catch(function(e) {
-                    msg.channel.send('Encountered an error. Could not remove role.');
+            const roles = fetchRoles(msg.guild.roles, args.join(' ').split(','));
+            if (roles) {
+                try{
+                    await member.removeRoles(roles);
+                } catch (e) {
                     console.log(e);
-                });
+                    return await msg.channel.send('Encountered an error. Could not remove role.');
+                }
+                const oldRoles = getRoleNames(roles).listjoin('or');
+                await msg.channel.send(`${member} is no longer ${oldRoles}`);
+                await util.log(msg, `Removed ${oldRoles} from ${member}`);
             }
-
         }
     };
-    return commands;
-}
+};

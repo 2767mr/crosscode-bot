@@ -19,13 +19,13 @@ module.exports = (instance, util, config, console) => {
 
     instance.on('ready', () => {
         for (const roleServer of config['role-servers']) {
-            const server = util.discObjFind(instance.guilds, roleServer.name);
+            const server = util.getFromName(instance.guilds, roleServer.name);
             const chans = roleServer['stream-chans'];
             if(!server || !Array.isArray(chans)) {
                 return;
             }
             for (const name of chans) {
-                const chan = util.discObjFind(server.channels, name);
+                const chan = util.getFromName(server.channels, name);
                 if(chan) {
                     commands.set({channel: chan, guild: server});
                 }

@@ -6,8 +6,6 @@ const util = require('./discord-util.js');
 
 const client = new discord.Client();
 
-const SAFE_INTERVAL = 30 * 1000;// every 30 seconds it updates to be more precise
-
 class Bot {
     constructor() {
         this._extendPrototypes();
@@ -21,7 +19,7 @@ class Bot {
     start() {
         this._registerHandlers();
         
-        client.login(process.env.BOT_TOKEN);
+        return client.login(process.env.BOT_TOKEN);
     }
 
     _loadEnv() {
@@ -31,7 +29,7 @@ class Bot {
                 if(!element) {
                     return;
                 }
-                const token = element.split('=');
+                const token = element.trim().split('=');
                 process.env[token[0]] = token[1];
             }
         }
@@ -112,6 +110,7 @@ class Bot {
         client.on('messageUpdate', (oldMsg, newMsg) => this._onMessageUpdate(oldMsg, newMsg));
         client.on('messageDelete', (msg) => this._onMessageDelete(msg));
         client.on('message', (msg) => this._onMessage(msg));
+        client.on('error', err => console.error(err));
     }
 
     _onReady() {
@@ -124,7 +123,7 @@ class Bot {
         console.log(`Logged in as ${client.user.tag}!`);
 
         this._onCountDown();
-        util.setSafeInterval(() => this._onCountDown(), SAFE_INTERVAL);
+        //util.setSafeInterval(() => this._onCountDown(), SAFE_INTERVAL);
     }
 
     /**
@@ -341,7 +340,7 @@ class Bot {
     async _checkForMedia(msg) {
         // Get stream drawings links automatically
         if (msg.channel.name === 'media') {
-            const ccChan = util.discObjFind(msg.guild.channels, '^crosscode$');
+            const ccChan = util.getFromName(msg.guild.channels, '^crosscode$');
             if (ccChan) {
                 const url = this._getJPGUrl(msg.content);
                 if(!url)
@@ -387,5 +386,11 @@ class Bot {
     }
 }
 
+process.on('unhandledRejection', (error) => {
+    console.error(error);
+});
+
 const bot = new Bot();
-bot.start();
+bot.start()
+    .then()
+    .catch(err => console.error(err));
