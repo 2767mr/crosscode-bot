@@ -78,7 +78,7 @@ module.exports = (client, util, config, console) => {
          */
         add: async (msg, args) => {
             const guild = msg.guild;
-            const member = msg.mentions.members.first() || msg.member;
+            let member = msg.mentions.members.first() || msg.member;
 
             if (member === null) {
                 msg.reply('You might be trying this from invisble status or from DMs. Try again, please!');
@@ -90,7 +90,6 @@ module.exports = (client, util, config, console) => {
 
             // users were mentioned
             if (msg.mentions.members.size) {
-				if(!util)
                 if (!util.isFromAdmin(msg)) {
                     msg.reply('You are not an admin');
                     return;
