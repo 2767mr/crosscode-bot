@@ -41,11 +41,6 @@ module.exports = function(instance, util) {
         satoshi : function satoshiIs(msg) {
            msg.channel.send('is karoshi');
         },
-        GFluegel: function gMordred(msg) {
-            msg.channel.send(createRichEmbed({
-                image: 'https://cdn.discordapp.com/emojis/441876583075151882.png?v=1'
-            }));
-        },
         poll: function createPoll(msg, args) {
             //let title = args.shift();
             /*let poll = new StrawPoll(title, args);
