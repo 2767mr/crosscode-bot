@@ -105,7 +105,7 @@
             "greeting": "Welcome! Use `$PREFIX -roles add <role>` to add a role!\nTo see a list of available roles, please visit chan:role-list",
             "stream-chans": ["^bot-spam$"],
             "channels": {
-                "greet": "botspam-hidden",
+                "greet": "role-requests",
                 "info": "role-list",
                 "syslog": "admin-watchtower"
             },
