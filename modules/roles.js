@@ -46,11 +46,14 @@ module.exports = (client, util, config, console) => {
                 i--;
             }
         }
-
-        for (const role of user.roles) {
+        let rolesToRemove = [];
+        for (const [name, role] of user.roles) {
             if (set.has(role.id)) {
-                await user.removeRole(role);
+                rolesToRemove.push(role);
             }
+        }
+        if(rolesToRemove.length) {
+            await user.removeRoles(rolesToRemove);
         }
     }
     return {
@@ -128,7 +131,6 @@ module.exports = (client, util, config, console) => {
                     break;
                 }
             }
-
             member.addRoles(roles).then(function(member) {
                 if (roles.length) {
                     var newRolesName = getRoleNames(roles).listjoin('and');
@@ -174,10 +176,11 @@ module.exports = (client, util, config, console) => {
                     msg.reply('You are not an admin');
                     return;
                 }
+                await msg.channel.send('Encountered an error. Could not remove role.')
                 member = msg.mentions.members.first();
             }
             const roles = fetchRoles(msg.guild.roles, args.join(' ').split(','));
-            if (roles) {
+            if (roles.length) {
                 try{
                     await member.removeRoles(roles);
                 } catch (e) {
@@ -187,6 +190,8 @@ module.exports = (client, util, config, console) => {
                 const oldRoles = getRoleNames(roles).listjoin('or');
                 await msg.channel.send(`${member} is no longer ${oldRoles}`);
                 await util.log(msg, `Removed ${oldRoles} from ${member}`);
+            } else {
+                await msg.channel.send(`${member} has role'd into a trap. ${member} takes 20 damage.`);
             }
         }
     };

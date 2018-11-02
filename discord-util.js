@@ -239,7 +239,7 @@ class MessageUtil {
     log(msg, message) {
         const server = findServer(msg.guild);
         if (server.chans['syslog']) {
-            return server.chans['syslog'].send(message);
+            return server.chans['syslog'].send(message).catch((e) => null);
         } else {
             return Promise.resolve(); 
         }
@@ -396,7 +396,7 @@ class ConfigUtil {
         if (arr && name && result) {
             return result;
         } else {
-            console.log(new Error(`Could not find ${name} in ${arr}`));
+            // console.log(new Error(`Could not find ${name} in ${arr}`));
             return null;
         }
     }
