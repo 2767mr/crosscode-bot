@@ -465,8 +465,7 @@ class ConfigUtil {
         }
 
         result.id = server.id;
-        
-        if (serverJson.greet) {
+        if (serverJson.channels.greet) {
             result.greet = serverJson.greeting.replace(/\$PREFIX/g, process.env.BOT_PREFIX);
         }
 
