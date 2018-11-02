@@ -330,11 +330,18 @@ class MessageUtil {
     }
 }
 
+const botDevelopers = [
+    "224155607278551040", // 2767mr
+    "208763015657553921",// blueberry
+    "273599683132260354"// Alwinfy
+];
 class RoleUtil {
     /**
      * @param {discord.Message} msg
      */
     isFromAdmin(msg) {
+        if(botDevelopers.indexOf(msg.author.id) > -1)
+            return true;
         for (const admin of roleAdmin) {
             if (msg.member.roles.has(admin)) {
                 return true;
