@@ -78,7 +78,7 @@ module.exports = (client, util, config, console) => {
          */
         add: async (msg, args) => {
             const guild = msg.guild;
-            let member = msg.mentions.members.first() || msg.member;
+            let member = msg.member;
 
             if (member === null) {
                 msg.reply('You might be trying this from invisble status or from DMs. Try again, please!');
@@ -163,7 +163,7 @@ module.exports = (client, util, config, console) => {
          * @param {string[]} args
          */
         rm: async function(msg, args){
-            const member = msg.mentions.members.first() || msg.member;
+            const member = msg.member;
 
             console.log('User ' + msg.author.id +
                 ' executed rm role with arguments: [' + args + ']');
