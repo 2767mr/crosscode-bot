@@ -35,30 +35,30 @@ module.exports = class CrossCodeStream {
             return;
         }
         const streamData = await this._getStreams();
-        if(!streamData.length)
+        if (!streamData.length)
             return;
 
         const streamerIds = streamData.map((streamer) => streamer.user_id);
         const users = await this._getTwitchUsersByIds(streamerIds);
 
         this.ccStreamers = new Map();
-        for (const [user, index] of users.entries()) {
+        for (const [index, user] of users.entries()) {
             const stream = streamData[index];
             const streamObject = {
-                title : stream.title,
-                user : {
-                    id : user.id,
-                    display_name : user.display_name,
-                    login : user.login,
+                title: stream.title,
+                user: {
+                    id: user.id,
+                    display_name: user.display_name,
+                    login: user.login,
                 },
-                start : stream.started_at,
-                language : stream.language
+                start: stream.started_at,
+                language: stream.language
             };
             this.ccStreamers.set(user.id, streamObject);
         }
     }
     async _getGameId() {
-        const {data} = await this._makeRequest({
+        const { data } = await this._makeRequest({
             uri: 'https://api.twitch.tv/helix/games?name=CrossCode'
         });
         this.gameId = data[0].id;
@@ -87,7 +87,7 @@ module.exports = class CrossCodeStream {
         });
         return response.data;
     }
-    
+
 
     _makeRequest(opts) {
         return rp({
