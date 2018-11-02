@@ -62,7 +62,7 @@ module.exports = function(client, util, config, console) {
             var guild = msg.guild;
             var member = msg.member;
             
-            if (member == null) {
+            if (member === null) {
                 msg.reply('You might be trying this from invisble status or from DMs. Try again, please!');
                 return;
             }
@@ -72,6 +72,7 @@ module.exports = function(client, util, config, console) {
 
             // users were mentioned
             if (msg.mentions.members.size) {
+				if(!util)
                 if (!util.isFromAdmin(msg)) {
                     msg.reply('You are not an admin');
                     return;
@@ -117,13 +118,14 @@ module.exports = function(client, util, config, console) {
                     if (dupRoles.length) {
                         retMessage += `\nAlready had ${dupRolesName}`;
                     }
-                    msg.channel.send(retMessage);
+                    return msg.channel.send(retMessage);
                 }
 
             }).catch(function(e) {
-                msg.channel.send('There was an error adding a role.');
-                console.log(e);
-            });
+				this.log(!!e);
+                msg.channel.send(`Big error right here ${arguments}`);
+                this.log(e);
+            }.bind(console));
         },
         get: function getRoles(msg) {
             msg.channel.send("```\n" + getRolesName(msg.guild.roles).join("\n") + "```");
