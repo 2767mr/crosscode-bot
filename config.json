@@ -52,6 +52,42 @@
     },
 
     "role-servers": [
+		{
+            "name": "^Shizuka cult$",
+            "greeting": "Welcome, enjoy your stay~",
+            "stream-chans": [],
+            "channels": {
+                "greet": "cult-enterance",
+                "info": "info",
+                "syslog": "syslog",
+                "editlog": "editlog"
+            },
+            "roles": {
+                "pending" : [],
+                "auto-role": [],
+                "whitelist": [],
+                "exclusivities": [
+                    []
+                ],
+                "blacklist" : [],
+                "admin" : []
+            },
+            "ratelimit": {
+                "server": {
+                    "threshold": 30,
+                    "ttl": 60
+                },
+                "channel": {
+                    "threshold": 8,
+                    "ttl": 45
+                },
+                "abuse": {
+                    "threshold": 5,
+                    "ttl": 600,
+                    "bantime": 600
+                }
+            }
+        },
         {
             "name": "CrossCode$",
             "greeting": "Welcome!",
