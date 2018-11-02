@@ -97,7 +97,7 @@ module.exports = (client, util, config, console) => {
                 }
                 member = msg.mentions.members.first();
             }
-            let roles = fetchRoles(msg.guild.roles, args.join(" ").split(","));
+            const roles = fetchRoles(msg.guild.roles, args.join(' ').split(','));
             let dupRoles = [];
             //removes roles the user already has
             for (var role of member.roles.array()) {
@@ -106,21 +106,18 @@ module.exports = (client, util, config, console) => {
                     dupRoles = dupRoles.concat(roles.splice(index, 1));
                 }
             }
-
-            const roles = fetchRoles(msg.guild.roles, args.join(' ').split(','));
-
+            
             if (roles.length > 0 && !util.hasRoles('auto-role', guild, member, console)) {
                 const autoRoles = util.getRoles('auto-role', guild);
                 for (const role of autoRoles) {
                     roles.push(role);
                 }
             }
-
-            const newRoles = roles.filter(role => member.roles.has(role.id));
-            const dupRoles = member.roles.filterArray(role => roles.indexOf(role) > -1);
+            const newRoles = roles.filter(role => !member.roles.has(role.id));
+            dupRoles = member.roles.filterArray(role => roles.indexOf(role) > -1);
 
             if (newRoles.length === 0) {
-                return await msg.channel.send('Could not add any new roles.');
+                return await msg.channel.send('No new roles to add.');
             }
 
             // Find inputted roles within existing exclusivity sets,
@@ -135,9 +132,9 @@ module.exports = (client, util, config, console) => {
 
             member.addRoles(roles).then(function(member) {
                 if (roles.length) {
-                    var newRolesName = getRolesName(roles).listjoin('and');
+                    var newRolesName = getRoleNames(roles).listjoin('and');
                     util.log(msg, `Added ${newRolesName} to ${member}`);
-                    var dupRolesName = getRolesName(dupRoles).listjoin('and');
+                    var dupRolesName = getRoleNames(dupRoles).listjoin('and');
                     var retMessage = `${member} is now ${newRolesName}.`;
                     if (dupRoles.length) {
                         retMessage += `\nAlready had ${dupRolesName}`;
@@ -146,13 +143,11 @@ module.exports = (client, util, config, console) => {
                 }
 
             }).catch(function(e) {
-				this.log(!!e);
-                msg.channel.send(`Big error right here ${arguments}`);
-                this.log(e);
-            }.bind(console));
+                return msg.channel.send('There was an error adding roles.');
+            });
         },
         get: function getRoles(msg) {
-            msg.channel.send("```\n" + getRolesName(msg.guild.roles).join("\n") + "```");
+            msg.channel.send("```\n" + getRoleNames(msg.guild.roles).join("\n") + "```");
         },
         update: function updateList(msg) {
             if (util.isFromAdmin(msg)) {
@@ -168,7 +163,7 @@ module.exports = (client, util, config, console) => {
          * @param {import('discord.js').Message} msg
          * @param {string[]} args
          */
-        rm: async (msg, args) => {
+        rm: async function(msg, args){
             const member = msg.mentions.members.first() || msg.member;
 
             console.log('User ' + msg.author.id +

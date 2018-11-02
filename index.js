@@ -47,7 +47,7 @@ class Bot {
     }
 
     _loadModules() {
-        const cmdTypes = this.configuration.modules;
+        const cmdTypes = ["roles"];
         const commands = {};
         const helpText = {};
 

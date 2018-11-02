@@ -24,33 +24,64 @@ const syslogSilencedUserIDs = [];
 /** @type {{[guildName: string]: {[type: string]: {threshold: number, ttl: number, [bantime]: number}}}} */
 let rateLimiterDefaultConfig = {};
 let timerCounter = 0;
-let devIds = [
-  "208763015657553921"
-];
-exports.getAllEmotes = function(client) {
-    //to minimize the possibility of spawning deleted emotes
-    knownEmotes = {};
-    client.emojis.array().forEach(function(emote) {
-        if (emote.animated)
-            return;
-        var name = emote.name;
-        for (var i = 1; knownEmotes[name]; i++) {
-            name = emote.name + i;
+
+/**
+ * 
+ * @param {discord.Guild} guild 
+ */
+function findServer(guild) {
+    for(const server of managedServers) {
+        if(guild.id === server.id) {
+            return server;
         }
-        knownEmotes[name] = {
-            id: emote.id,
-            guildId: emote.guild.id,
-            name: emote.name
+    }
+}
+
+class UtilFactory {
+    constructor() {
+        this._extendPrototypes();
+    }
+
+    /** 
+     * @returns {EmojiUtil | MessageUtil | RoleUtil | ConfigUtil | RatelimiterUtil}
+     */
+    createUtil() {
+        const Util = this._combineClasses(
+            EmojiUtil,
+            MessageUtil,
+            RoleUtil,
+            ConfigUtil,
+            RatelimiterUtil
+        );
+
+        return new Util();
+    }
+
+    _extendPrototypes() {
+        /**
+         * 
+         * @param {string} word
+         * @this Array
+         */
+        Array.prototype.listjoin = function(word) {
+            if(this.length < 3)
+                return this.join(` ${word} `);
+            return `${this.slice(0, this.length - 1).join(', ')}, ${word} ${this[this.length - 1]}`;
         };
     }
 
-exports.getCacheEmotesIds = function(guildId) {
-    var ids = [];
-    for (var i in knownEmotes) {
-        var emote = knownEmotes[i];
-        //since o
-        if (guildId !== undefined && emote.animated && emote.guidId === guidID) {
-            ids.push(i);
+    _combineClasses(...classes) {
+        const result = function(...args){
+            for (const clazz of classes) {
+                Object.assign(this, new clazz(...args));
+            }
+        };
+        for (const clazz of classes) {
+            for (const method of Object.getOwnPropertyNames(clazz.prototype)) {
+                if (method !== 'constructor') {
+                    result.prototype[method] = clazz.prototype[method];
+                }
+            }
         }
         return result;
     }
@@ -58,26 +89,26 @@ exports.getCacheEmotesIds = function(guildId) {
 
 class EmojiUtil {
     /**
-     *
+     * 
      * @param {discord.Client} client
      */
     getAllEmotes(client) {
         //to minimize the possibility of spawning deleted emotes
         knownEmotes = {};
-        for (const [_, emote] of client.emojis) {
+        for (const [realName, emote] of client.emojis) {
             if (emote.animated) {
                 continue;
             }
-
-            let name = emote.name;
+    
+            let name = realName;
             for (let i = 1; knownEmotes[name]; i++) {
-                name = emote.name + i;
+                name = realName + i;
             }
-
+    
             knownEmotes[name] = {
                 id: emote.id,
                 guildId: emote.guild.id,
-                name: emote.name
+                name: realName
             };
         }
     }
@@ -97,7 +128,7 @@ class EmojiUtil {
     }
 
     /**
-     *
+     * 
      * @param {discord.Message} [msg]
      * @param {string} name
      * @returns {{id: string, toString: () => string}}
@@ -123,95 +154,12 @@ class EmojiUtil {
         }
         //console.debug(`Warning: unknown emoji "${ename}"`);
         return {
-            id: emote.id,
-            toString: function() {
-                if(emote.animated) {
-                  return `<a:${emote.name}:${emote.id}>`;
-                }
-                return `<:${emote.name}:${emote.id}>`;
+            id: '',
+            toString: () => {
+                return '*could not find emoji*';
             }
         };
     }
-    //Weird error can not find emojis of undefined
-    let emojis = null;
-    if (object instanceof Discord.Message && object.guild !== undefined) {
-        emojis = object.guild.emojis.find("name", name);
-        if (emojis)
-            return emojis;
-    }
-    //console.debug(`Warning: unknown emoji "${name}"`);
-    return {
-        id: "",
-        toString: function() {
-            return "*could not find emoji*";
-        }
-    };
-};
-
-exports.findMember = function(object, string) {
-    let member = null;
-    if (string && object instanceof Discord.Message && object.channel.guild) {
-        if (isId(string)) {
-            string = filterUserId(string)
-        }
-        member = object.channel.guild.members.find(function(item) {
-            return item.user.username.indexOf(string) > -1 || item.user.id.indexOf(string) > -1;
-        })
-    }
-    return member;
-};
-
-exports.createRichEmbed = function(opts) {
-    let richEmbed = new(Discord.RichEmbed || Discord.MessageEmbed);
-    if (opts.fields) {
-        let fields = opts.fields.concat([]);
-        //to get the first 25 fields
-        fields = fields.splice(0, 25);
-        fields.forEach(function(field) {
-            richEmbed.addField(field.name, field.value);
-        });
-    }
-    opts.timestamp && richEmbed.setTimestamp(opts.timestamp);
-    opts.description && richEmbed.setDescription(opts.description);
-    opts.image && richEmbed.setImage(opts.image);
-    opts.title && richEmbed.setTitle(opts.title);
-    opts.author && richEmbed.setAuthor(opts.author);
-    opts.url && richEmbed.setURL(opts.url);
-    opts.footer && opts.footer.text && richEmbed.setFooter(opts.footer.text);
-    return richEmbed;
-};
-
-exports.formatHelpText = function(invoc, helpText) {
-    let prefix = invoc.replace(/\s[^\s]+$/, '');
-    return `\`\`\`md\n${helpText.replace(/^#.*\n/mg, '').replace(/INVOC/g, prefix)}\n\`\`\``;
-};
-
-exports.isFromBotDeveloper = function(msg) {
-    for(const id of devIds) {
-        if(id === msg.author.id) {
-            return true;
-        }
-    }
-    return false;
-
-};
-
-exports.isFromAdmin = function(msg) {
-    for(let admin of roleAdmin) {
-      if(msg.member.roles.has(admin)) {
-        return true;
-      }
-    }
-    return false;
-};
-
-function discObjFind(obj, name) {
-    let re = new RegExp(name.toString().trim(), 'i');
-    let ret = obj.find(val => re.test(val.name));
-    if (obj && name && ret)
-        return ret;
-    else
-        throw `Could not find ${name} in ${obj}`;
 }
 
 class MessageUtil {
@@ -274,10 +222,10 @@ class MessageUtil {
     }
 
     /**
-     *
-     * @param {dicord.Channel} channel
-     * @param {string} text
-     * @param {*} embed
+     * 
+     * @param {dicord.Channel} channel 
+     * @param {string} text 
+     * @param {*} embed 
      */
     sendRichEmbed(channel, text, embed) {
         channel.send(text, this.createRichEmbed(embed));
@@ -293,34 +241,34 @@ class MessageUtil {
         if (server.chans['syslog']) {
             return server.chans['syslog'].send(message);
         } else {
-            return Promise.resolve();
+            return Promise.resolve(); 
         }
     }
-
+    
     /**
-     *
-     * @param {string} text
+     * 
+     * @param {string} text 
      * @param {discord.RichEmbed} embed
      * @returns {(msg: discord.Message) => Promise<discord.Message>}
      */
     createSendRichEmbed(text, embed) {
         return (msg) => msg.channel.send(text, embed);
     }
-
+    
     /**
-     *
-     * @param {string} text
-     * @param {*} content
+     * 
+     * @param {string} text 
+     * @param {*} content 
      * @returns {(msg: discord.Message) => Promise<discord.Message>}
      */
     createSend(text, options) {
         return (msg) => msg.channel.send(text, options);
     }
-
+    
     /**
-     *
-     * @param {() => string} text
-     * @param {() => any} content
+     * 
+     * @param {() => string} text 
+     * @param {() => any} content 
      * @returns {(msg: discord.Message) => Promise<discord.Message>}
      */
     createSendDynamic(text, options) {
@@ -332,8 +280,8 @@ class MessageUtil {
     }
 
     /**
-     *
-     * @param {string} str
+     * 
+     * @param {string} str 
      */
     argParse(str) {
         const spl = [''];
@@ -365,16 +313,16 @@ class MessageUtil {
     }
 
     /**
-     *
-     * @param {string} id
+     * 
+     * @param {string} id 
      */
     _filterUserId(id) {
         return id.replace(/[^0-9]/g, '');
     }
 
     /**
-     *
-     * @param {string} id
+     * 
+     * @param {string} id 
      * @returns {boolean}
      */
     _isId(id) {
@@ -394,7 +342,7 @@ class RoleUtil {
         }
         return false;
     }
-
+    
     /**
      * @param {string} roleType
      * @param {discord.Guild} guild
@@ -475,7 +423,7 @@ class ConfigUtil {
             console.log(e);
         }
     }
-
+    
     /**
      * @param {discord.Guild} guild
      * @param {string} msg
@@ -488,11 +436,11 @@ class ConfigUtil {
         }
         return msg;
     }
-
+    
     /**
-     *
-     * @param {discord.Client} client
-     * @param {*} serverJson
+     * 
+     * @param {discord.Client} client 
+     * @param {*} serverJson 
      * @returns {{id: string, chans: {[name: string]: discord.GuildChannel}, pending: discord.Role[], 'auto-role': discord.Role[], exclusiveSets: {[name: string]: Set<string>}}}
      */
     _parseModServer(client, serverJson) {
@@ -510,7 +458,7 @@ class ConfigUtil {
         }
 
         result.id = server.id;
-
+        
         if (serverJson.greet) {
             result.greet = serverJson.greeting.replace(/\$PREFIX/g, process.env.BOT_PREFIX);
         }
@@ -532,20 +480,20 @@ class ConfigUtil {
     }
 
     /**
-     *
-     * @param {*} json
+     * 
+     * @param {*} json 
      * @param {discord.Guild} server
      * @returns {{pending: discord.Role[], 'auto-role': discord.Role[], exclusiveSets: {[name: string]: Set<string>}}
      */
     _parseRoles(json, server) {
         const result = {pending: [], 'auto-role': [], exclusiveSets: {}};
-
+    
         if (json.roles.pending) {
             for (const role of json.roles.pending) {
                 result.pending.push(this.getFromName(server.roles, role));
             }
         }
-
+    
         if(json.roles['auto-role']) {
             for (const role of json.roles['auto-role']) {
                 result['auto-role'].push(this.getFromName(server.roles, role));
@@ -556,19 +504,19 @@ class ConfigUtil {
                 roleBlacklist.push(this.getFromName(server.roles, role).id);
             }
         }
-
+    
         if (json.roles.whitelist) {
             for (const role of json.roles.whitelist) {
                 roleWhitelist.push(this.getFromName(server.roles, role).id);
             }
         }
-
+    
         if (json.roles.admin) {
             for(const role of json.roles.admin) {
                 roleAdmin.push(this.getFromName(server.roles, role).id);
             }
         }
-
+    
         if (json.roles.exclusivities) {
             for (const roleSet of json.roles.exclusivities) {
                 for (const exRole of roleSet) {
@@ -585,13 +533,13 @@ class ConfigUtil {
                 }
             }
         }
-
+    
         return result;
     }
 
     /**
-     *
-     * @param {*} json
+     * 
+     * @param {*} json 
      * @param {discord.Guild} server
      */
     _parseRatelimiters(json, server) {
@@ -628,118 +576,12 @@ class ConfigUtil {
             }
         }
     }
-    return null;
-}
-function findServer(guild) {
-  for(let server of manageServs) {
-     if(guild.id === server.id) {
-        return server;
-     }
-  }
-}
-exports.hasRoles = function(roleType, guild, member, console) {
-  var server = findServer(guild);
-  var roles = server[roleType];
-  for(let role of (roles || [])) {
-    if(!member.roles.has(role.id)) {
-      return false;
-    }
-  }
-  return true;
-}
-exports.getRoles = function(roleType, guild) {
-  var server = findServer(guild);
-  return server[roleType] || [];
-}
-exports.log = function(msg, message) {
-  var server = findServer(msg.guild);
-  if (server.chans["syslog"]) {
-    return server.chans["syslog"].send(message);
-  } else {
-    return null;
-  }
-}
-exports.getAllServers = function getAllServers(client, servers, console) {
-    if(manageServs.length === 0)
-        for (let json of servers)
-        {
-            let modServ = findModServer(client, json, console);
-            if (modServ)
-                manageServs.push(modServ);
-        }
-    return manageServs;
-}
-exports.updateServers = function(client, console) {
-  try {
-    var cachedServers = JSON.parse(JSON.stringify(manageServs));
-    manageServs = [];
-    this.getAllServers(client, cachedServers, console);
-  }catch(e) {
-    console.log(e);
-  }
-}
-exports.getRoleBlacklist = function() {
-    return roleBlacklist;
-}
-exports.getRoleWhitelist = function() {
-    return roleWhitelist;
-}
-function getChanID(msg) {
-  let first = msg.indexOf("chan:");
-  if(first == -1) {
-    return -1;
-  }
-  const cLen = "chan:".length;
-  first += cLen;
-  let last = first;
-  var res = msg.indexOf(" ", first);
-  if(res > -1) {
-    last = res;
-  } else {
-    last = msg.length;
-  }
-  return [msg.substring(first - cLen, last), msg.substring(first, last)];
-}
-exports.greetingsParse = function(guild, msg) {
-   var chan;
-   while(Array.isArray((chan = getChanID(msg)))) {
-       let channel = exports.discObjFind(guild.channels, chan[1]) || "#invalid-channel";
-       msg = msg.replace(new RegExp(chan[0], 'g'), channel.toString());
-   }
-   return msg;
-}
-exports.argParse = function(str) {
-    let spl = [''], esc = false, quot = true;
-    for (let c of str) {
-        if (esc) { // last character was a backslash, skip handling
-            esc = false;
-            spl[spl.length - 1] += '\\' + c;
-            continue;
-        }
-        switch(c) {
-        case '\\':
-            esc = true; // escape next character
-            break;
-        case '"':
-            quot = !quot;
-            break;
-        case ' ':
-        case '\t':
-            if (quot && spl[spl.length - 1]) {
-                spl.push(''); // split on unquoted spaces
-                break;
-            }
-        default:
-            spl[spl.length - 1] += c;
-        }
-    }
-    return spl;
-}
+    
 
 
     /**
-     *
-     * @param {string} msg
+     * 
+     * @param {string} msg 
      */
     _getChanID(msg) {
         const pattern = /chan:([^ ]*?)( |$)/i;
@@ -759,7 +601,7 @@ class RatelimiterUtil {
     setRateLimiterDefaultConfig(rlConfig) {
         rateLimiterDefaultConfig = rlConfig;
     }
-
+    
     /**
      *
      * @param {{[ratelimiterType: string]: {threshold: number, ttl: number}}} config
@@ -771,7 +613,7 @@ class RatelimiterUtil {
             console.log('[ratelimit] WARN: using default configuration for self: syslog RL alerts ratelimiter');
             selfRateLimiters.syslogRatelimit = new FastRateLimit(rateLimiterDefaultConfig);
         }
-
+    
         if (config['timers-ratelimit']) {
             selfRateLimiters.timersRatelimit = new FastRateLimit(config['timers-ratelimit']);
         } else {
@@ -779,7 +621,7 @@ class RatelimiterUtil {
             selfRateLimiters.timersRatelimit = new FastRateLimit(rateLimiterDefaultConfig);
         }
     }
-
+    
     /**
      *
      * @param {{[ratelimiterType: string]: {threshold: number, ttl: number}}} config
@@ -795,9 +637,9 @@ class RatelimiterUtil {
             }
         }
     }
-
+    
     /**
-     *
+     * 
      * @param {discord.Message} message
      */
     async consumeRateLimitToken(message) {
@@ -815,76 +657,62 @@ class RatelimiterUtil {
             throw new Error('[ratelimit] WARN: guild not registered in system: ' + guild.id);
         }
 
-/**
- *
- * @param {Discord.TextChannel} channel
- * @param {string} text
- * @param {*} embed
- */
-exports.sendRichEmbed = function(channel, text, embed) {
-    return channel.send(text, embed);
-}
-
-
-/**
- *
- * @param {string} text
- * @param {*} content
- * @returns {(msg: Discord.Message) => void}
- */
-exports.createSend = function(text, options) {
-    return (msg) => msg.channel.send(text, options);
-}
-
-/**
- *
- * @param {() => string} text
- * @param {() => any} content
- * @returns {(msg: Discord.Message) => void}
- */
-exports.createSendDynamic = function(text, options) {
-    if (options) {
-        return (msg) => msg.channel.send(text(msg), options(msg));
-    } else {
-        return (msg) => msg.channel.send(text(msg));
-    }
-
-
-/**
- *
- * @param {Discord.Message} msg
- */
-exports.consumeRateLimitToken = function(message) {
-    // Ratelimiter server selector
-    let ratelimiterServer;
-    let guild = message.guild;
-    let user = message.author;
-
-    // Is it a DM?
-    if (!guild) {
-        // Yes, the DMs ratelimiter is used.
-        ratelimiterServer = rateLimiters["dm"];
-
-    } else {
-        // No, the ratelimiter for that server is used, if it's there.
-        // Ratelimit blocks by default if the server is not registered into the system!
-        if (!rateLimiters[guild.id]) {
-            console.log("[ratelimit] WARN: guild not registered in system: " + guild.id);
-            return Promise.reject();
+        if (guild) {
+            for (const servenBanType in banLists[guild.id]) {
+                if (banLists[guild.id].hasOwnProperty(servenBanType)) {
+                    if (!(banLists[guild.id][servenBanType].hasTokenSync(user.id))) {
+                        throw new Error('banlist');
+                    }
+                }
+            }
         }
 
+
+        // Consume the tokens for each ratelimiter type, and test against abuse bucket
+        try {
+            await ratelimiterServer.abuse.hasToken(channelNamespace);
+        } catch(e) {
+            throw new Error(`[ratelimit] block abuse uid=${user.id} mid=${message.id}`);
+        }
+
+        try {
+            await ratelimiterServer.server.consume(serverNamespace);
+        } catch (e) {
+            await this._printRateLimitError(message, 'server', ratelimiterServer);
+            throw new Error(`[ratelimit] block server uid=${user.id} mid=${message.id}`);
+        }
+        
+        try {
+            await ratelimiterServer.channel.consume(serverNamespace);
+        } catch (e) {
+            await this._printRateLimitError(message, 'channel', ratelimiterServer);
+            throw new Error(`[ratelimit] block channel uid=${user.id} mid=${message.id} chid=${message.channel.id}`);
+        }
+    }
+
+    /**
+     * 
+     * @param {() => void} fn 
+     * @param {number} time 
+     */
+    setSafeInterval(fn, time) {
+        // Check for overflows
+        if (time > 2147483647) {
+            throw new Error('Potential misbehaving timer detected!');
+        }
+    
         // Get the stack-trace up to here, for debugging purposes.
         let error;
-
+    
         try {
             throw new Error();
         } catch(e) {
             error = e.stack.replace(/^Error\n/g, '');
         }
-
+    
         // Obtain a suitable name-space
         const namespace = ++timerCounter;
-
+    
         const interval = setInterval(async () => {
             try {
                 await selfRateLimiters.timersRatelimit.consume(namespace);
@@ -897,8 +725,8 @@ exports.consumeRateLimitToken = function(message) {
             fn();
         }, time);
     }
-
-
+    
+        
 
     /**
      * @param {discord.Messsage} msg
@@ -922,8 +750,8 @@ exports.consumeRateLimitToken = function(message) {
     }
 
     /**
-     *
-     * @param {discord.Message} msg
+     * 
+     * @param {discord.Message} msg 
      * @param {string} scope
      * @param {{[type: string]: FastRateLimit}}
      * @returns {Promise<void>}
@@ -932,15 +760,15 @@ exports.consumeRateLimitToken = function(message) {
         const guild = msg.guild;
         const user = msg.member;
         const serverNamespace = user.id;
-
+    
         if (!guild)
             return;
-
+    
         const server = findServer(guild);
         if (server && server.chans['syslog']) {
             try {
                 await selfRateLimiters.syslogRatelimit.consume(serverNamespace + ':' + scope);
-
+                
                 if (syslogSilencedUserIDs.includes(user.id)) {
                     syslogSilencedUserIDs.splice(syslogSilencedUserIDs.indexOf(user.id), 1);
                 }
@@ -971,7 +799,7 @@ exports.consumeRateLimitToken = function(message) {
                     syslogSilencedUserIDs.push(user.id);
                 }
             }
-
+    
             // Consume tokens on abuse bucket
             try {
                 await ratelimiterServer.abuse.consume(serverNamespace);
@@ -986,10 +814,10 @@ exports.consumeRateLimitToken = function(message) {
             }
         }
     }
-
+    
     /**
-     *
-     * @param {discord.Message} message
+     * 
+     * @param {discord.Message} message 
      */
     _messageToURL(message) {
         return 'https://discordapp.com/channels/' +
