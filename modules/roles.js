@@ -98,7 +98,7 @@ module.exports = (client, util, config, console) => {
                 }
                 member = msg.mentions.members.first();
             }
-            if (msg.mentions.users.size) {
+            else if (msg.mentions.users.size) {
                 if (!util.isFromAdmin(msg)) {
                     msg.reply('You are not an admin');
                     return;
