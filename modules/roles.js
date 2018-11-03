@@ -91,15 +91,20 @@ module.exports = (client, util, config, console) => {
             console.log('User ' + msg.author.id +
                 ' executed add role with arguments: [' + args + ']');
 
-            // users were mentioned
-            
+            if(msg.mentions.members.size) {
+                if (!util.isFromAdmin(msg)) {
+                    msg.reply('You are not an admin');
+                    return;
+                }
+                member = msg.mentions.members.first();
+            }
             if (msg.mentions.users.size) {
                 if (!util.isFromAdmin(msg)) {
                     msg.reply('You are not an admin');
                     return;
                 }
                 let user = msg.mentions.users.first();
-                let member = msg.guild.members.find(function(guildMember, id, members) {
+                member = msg.guild.members.find(function(guildMember, id, members) {
                     return guildMember.user.id === user.id;
                 });
                 if(!member) {
@@ -183,7 +188,6 @@ module.exports = (client, util, config, console) => {
                     msg.reply('You are not an admin');
                     return;
                 }
-                await msg.channel.send('Encountered an error. Could not remove role.')
                 member = msg.mentions.members.first();
             }
             const roles = fetchRoles(msg.guild.roles, args.join(' ').split(','));
