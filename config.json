@@ -219,6 +219,37 @@
                     "bantime": 600
                 }
             }
+        },{
+            "name" : "Additional Lea Emotes",
+            "greeting" : "Hi!",
+            "channels": {
+                "greet": "general",
+                "info": "general",
+                "syslog": "general",
+                "editlog": "general"
+            },
+            "roles": {
+                "pending": [],
+                "whitelist": [],
+                "exclusivities": [],
+                "blacklist": [],
+                "admin" : []
+            },
+            "ratelimit": {
+                "server": {
+                    "threshold": 30,
+                    "ttl": 60
+                },
+                "channel": {
+                    "threshold": 8,
+                    "ttl": 45
+                },
+                "abuse": {
+                    "threshold": 5,
+                    "ttl": 600,
+                    "bantime": 600
+                }
+            }
         },
         {
             "name": "bottest",
