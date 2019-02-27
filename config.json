@@ -223,7 +223,7 @@
             "name" : "Additional Lea Emotes",
             "greeting" : "Hi!",
             "channels": {
-                "greet": "general",
+                "greet": "^general$",
                 "info": "general",
                 "syslog": "general",
                 "editlog": "general"
