@@ -195,7 +195,9 @@
             },
             "roles": {
                 "pending": [],
-                "whitelist": [],
+                "whitelist": [
+                    "joinable"
+                ],
                 "exclusivities": [],
                 "blacklist": [],
                 "admin" : []

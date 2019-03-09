@@ -1,1 +1,0 @@
-docker run --rm -it -v ${PWD}:/crosscodebot -v node_modules:/crosscodebot/node_modules node /bin/bash -c "cd /crosscodebot && npm install && npm install -g nodemon && nodemon -L index.js"

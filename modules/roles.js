@@ -102,7 +102,7 @@ module.exports = (client, util, config, console) => {
                 }
             }
 
-            const newRoles = roles.filter(role => member.roles.has(role.id));
+            const newRoles = roles.filter(role => !member.roles.has(role.id));
             const dupRoles = member.roles.filterArray(role => roles.indexOf(role) > -1);
 
             if (newRoles.length === 0) {
